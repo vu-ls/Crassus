@@ -95,6 +95,20 @@ namespace Spartacus.ProcMon
             Network = 5
         }
 
+        public enum EventProcessOperation : Int16
+        {
+            Process_Defined = 0,
+            Process_Create = 1,
+            Process_Exit = 2,
+            Thread_Create = 3,
+            Thread_Exit = 4,
+            Load_Image = 5,
+            Thread_Profile = 6,
+            Process_Start = 7,
+            Process_Statistics = 8,
+            System_Statistics = 9
+        }
+
         public enum EventFileSystemOperation : Int16
         {
             VolumeDismount = 0,
@@ -402,10 +416,13 @@ namespace Spartacus.ProcMon
             public UInt32 ExtraDetailSize;
         }
 
+        // This hard-codes every Operation for a PMLEvent to the FileSystem subset of oeprations.
+        // This isn't what we want.
         public struct PMLEvent
         {
             public EventClassType EventClass;
             public EventFileSystemOperation Operation;
+            public EventProcessOperation ProcessOperation;
             public EventResult Result;
             public string Path;
             public PMLProcessStruct Process;

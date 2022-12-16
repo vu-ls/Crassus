@@ -86,6 +86,7 @@ namespace Spartacus.Spartacus.CommandLine
 
         private void Parse(Dictionary<string, string> arguments)
         {
+            RuntimeData.ProcessExistingLog = true;
             foreach (KeyValuePair<string, string> argument in arguments)
             {
                 switch (argument.Key.ToLower())
@@ -151,6 +152,7 @@ namespace Spartacus.Spartacus.CommandLine
                         break;
                     default:
                         throw new Exception("Unknown argument: " + argument.Key);
+
                 }
             }
 
@@ -178,15 +180,6 @@ namespace Spartacus.Spartacus.CommandLine
 
         private void SanitiseHijackingDetection()
         {
-            // Process Monitor.
-            if (RuntimeData.ProcMonExecutable == "")
-            {
-                throw new Exception("--procmon is missing");
-            }
-            else if (!File.Exists(RuntimeData.ProcMonExecutable))
-            {
-                throw new Exception("ProcMon executable does not exist: " + RuntimeData.ProcMonExecutable);
-            }
 
             // Log and Config files.
             if (RuntimeData.ProcMonConfigFile == "")
@@ -232,19 +225,6 @@ namespace Spartacus.Spartacus.CommandLine
 
         private void SanitiseSharedArguments()
         {
-            // CSV File.
-            if (RuntimeData.CsvOutputFile == "")
-            {
-                throw new Exception("--csv is missing");
-            }
-            else if (File.Exists(RuntimeData.CsvOutputFile))
-            {
-                Logger.Debug("--csv exists and will be overwritten");
-            }
-            else
-            {
-                Logger.Debug("--csv does not exist and will be created");
-            }
 
             if (RuntimeData.TrackExecutables.Any())
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static Spartacus.ProcMon.ProcMonConstants;
 
@@ -95,15 +96,46 @@ namespace Spartacus.ProcMon
             //stream.Seek(sizeOfStackTrace, SeekOrigin.Current);
             //stream.Seek(pVoidSize * 5 + 0x14, SeekOrigin.Current);
             //reader.ReadInt32(); // Should be 0
-            stream.Seek(sizeOfStackTrace + (pVoidSize * 5 + 0x14) + 4, SeekOrigin.Current);
-            byte stringSize = reader.ReadByte();
-            reader.ReadBytes(3); // Not relevant for now.
-            string eventPath = Encoding.ASCII.GetString(reader.ReadBytes(stringSize));
 
+
+            string eventPath = "";
+            // In the case of Load Image, we want to seek 72
+            if (logEvent.EventClass == 1 && logEvent.OperationType == 5)
+            {
+                stream.Seek(sizeOfStackTrace + 0xc, SeekOrigin.Current);
+                byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
+                //stringSize = 40;
+                reader.ReadBytes(3); // Not relevant for now.
+                eventPath = Encoding.ASCII.GetString(reader.ReadBytes(stringSize));
+            }
+            else if (logEvent.EventClass == 1 && logEvent.OperationType == 1)
+            {
+                stream.Seek(sizeOfStackTrace + 0xc + 0x3d, SeekOrigin.Current);
+                byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
+                stringSize = 255;
+                //reader.ReadBytes(3); // Not relevant for now.
+                reader.ReadBytes(2); // Not relevant for now.
+                eventPath = Encoding.Unicode.GetString(reader.ReadBytes(stringSize));
+                Regex regex = new Regex(@".:\\.+?\.exe");
+                eventPath = regex.Match(eventPath.ToLower()).Value;
+
+            }
+            else
+            {
+                stream.Seek(sizeOfStackTrace + (pVoidSize * 5 + 0x14) + 4, SeekOrigin.Current);
+                byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
+                //stringSize = 40;
+                reader.ReadBytes(3); // Not relevant for now.
+                eventPath = Encoding.ASCII.GetString(reader.ReadBytes(stringSize));
+            }
+
+
+            // TODO fix up to be universal
             return new PMLEvent()
             {
                 EventClass = (EventClassType)logEvent.EventClass,
                 Operation = (EventFileSystemOperation)logEvent.OperationType,
+                //ProcessOperation = (EventProcessOperation)logEvent.oper
                 Result = (EventResult)logEvent.Result,
                 Path = eventPath,
                 Process = LogProcesses[logEvent.indexProcessEvent],
@@ -111,6 +143,8 @@ namespace Spartacus.ProcMon
                 Loaded = true,
                 FoundPath = ""
             };
+           
+
         }
 
         public UInt32 TotalEvents()
