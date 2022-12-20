@@ -12,15 +12,15 @@ namespace Spartacus.Spartacus.CommandLine
 
         public static string ProcMonLogFile = "";
 
-        public static string CsvOutputFile = "";
+        public static string CsvOutputFile = "results.csv";
 
         public static string ProcMonExecutable = "";
 
-        public static string ExportsOutputDirectory = "";
+        public static string ExportsOutputDirectory = "stubs";
 
         public static string ProxyDllTemplate = "";
 
-        public static bool ProcessExistingLog = false;
+        public static bool ProcessExistingLog = true;
 
         public static List<string> TrackExecutables = new List<string>();
 

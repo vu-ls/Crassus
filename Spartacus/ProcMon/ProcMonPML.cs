@@ -64,7 +64,15 @@ namespace Spartacus.ProcMon
                 return null;
             }
 
-            int pVoidSize = LogHeader.Architecture == 1 ? 8 : 4;
+            int pVoidSize;
+            if (LogHeader.Architecture == 1)
+            {
+                pVoidSize = 8;
+             }
+            else
+            {
+                pVoidSize = 4;
+            }
             stream.Seek(LogEventOffsets[eventIndex], SeekOrigin.Begin);
 
             PMLEventStruct logEvent = new PMLEventStruct();
@@ -97,31 +105,38 @@ namespace Spartacus.ProcMon
             //stream.Seek(pVoidSize * 5 + 0x14, SeekOrigin.Current);
             //reader.ReadInt32(); // Should be 0
 
-
+            // This is all silly.  But it's an artifact of how Spartacus was originally coded.
             string eventPath = "";
             // In the case of Load Image, we want to seek 72
             if (logEvent.EventClass == 1 && logEvent.OperationType == 5)
             {
-                stream.Seek(sizeOfStackTrace + 0xc, SeekOrigin.Current);
-                byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
-                //stringSize = 40;
+                // Load Image (DLL) Procmon event
+                stream.Seek(sizeOfStackTrace + pVoidSize + 4, SeekOrigin.Current);
+                byte stringSize = reader.ReadByte();
+//                byte stringSize = 40;
                 reader.ReadBytes(3); // Not relevant for now.
                 eventPath = Encoding.ASCII.GetString(reader.ReadBytes(stringSize));
             }
             else if (logEvent.EventClass == 1 && logEvent.OperationType == 1)
             {
+                // Create Process Procmon Event
                 stream.Seek(sizeOfStackTrace + 0xc + 0x3d, SeekOrigin.Current);
-                byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
+                byte stringSize = reader.ReadByte();
+                // Whoever wrote this code should feel really bad about themselves.
+                // The path of a created process is in the string table, rather than as a specified-length ASCII string
+                // Doing this hack to avoid figuring out how to work with the string table sure is something.
                 stringSize = 255;
-                //reader.ReadBytes(3); // Not relevant for now.
                 reader.ReadBytes(2); // Not relevant for now.
+                // Create Process uses a string table to specify what process is created
+                // This is an embarrassing hack, but it was easier than reverse enginerring the PML file format
+                // to figure out how to get string table entries precisely.
                 eventPath = Encoding.Unicode.GetString(reader.ReadBytes(stringSize));
                 Regex regex = new Regex(@".:\\.+?\.exe");
                 eventPath = regex.Match(eventPath.ToLower()).Value;
-
             }
-            else
+            else if (logEvent.EventClass == 3 && logEvent.OperationType == 20)
             {
+                // FileOpen Procmon Event
                 stream.Seek(sizeOfStackTrace + (pVoidSize * 5 + 0x14) + 4, SeekOrigin.Current);
                 byte stringSize = reader.ReadByte();  // TODO: For Load Image, this string size returns 0!
                 //stringSize = 40;
@@ -130,7 +145,7 @@ namespace Spartacus.ProcMon
             }
 
 
-            // TODO fix up to be universal
+            // TODO fix up to be more universal
             return new PMLEvent()
             {
                 EventClass = (EventClassType)logEvent.EventClass,

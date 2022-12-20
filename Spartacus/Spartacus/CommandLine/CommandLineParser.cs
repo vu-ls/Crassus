@@ -86,7 +86,6 @@ namespace Spartacus.Spartacus.CommandLine
 
         private void Parse(Dictionary<string, string> arguments)
         {
-            RuntimeData.ProcessExistingLog = true;
             foreach (KeyValuePair<string, string> argument in arguments)
             {
                 switch (argument.Key.ToLower())
@@ -167,14 +166,19 @@ namespace Spartacus.Spartacus.CommandLine
 
         private void SanitiseExistingLogProcessing()
         {
-            // Log file.
-            if (RuntimeData.ProcMonLogFile == "")
+            if (Environment.GetCommandLineArgs().Count() < 2)
             {
-                throw new Exception("--pml is missing");
+                // We'll never get here.  But whatevs.
+                throw new Exception("Please specify a PML file to parse (Environment.GetCommandLineArgs.count()).");
             }
-            else if (!File.Exists(RuntimeData.ProcMonLogFile))
+            else if (RuntimeData.ProcMonLogFile == "")
             {
-                throw new Exception("--pml file does not exist");
+                RuntimeData.ProcMonLogFile = Environment.GetCommandLineArgs()[1];
+            }
+            
+            if (!File.Exists(RuntimeData.ProcMonLogFile))
+            {
+                throw new Exception("PML file does not exist");
             }
         }
 
@@ -236,17 +240,17 @@ namespace Spartacus.Spartacus.CommandLine
             {
                 Logger.Debug("No --exports passed, will skip proxy DLL generation");
             }
-            else if (Directory.Exists(RuntimeData.ExportsOutputDirectory))
-            {
-                Logger.Debug("--exports directory already exists");
-            }
-            else
-            {
-                // Directory does not exist.
-                Logger.Debug("--exports directory does not exist, creating it now");
-                // Will throw exception if there's an error.
-                Directory.CreateDirectory(RuntimeData.ExportsOutputDirectory);
-            }
+            //else if (Directory.Exists(RuntimeData.ExportsOutputDirectory))
+            //{
+            //    Logger.Debug("--exports directory already exists");
+            //}
+            //else
+            //{
+            //    // Directory does not exist.
+            //    Logger.Debug("--exports directory does not exist, creating it now");
+            //    // Will throw exception if there's an error.
+            //    Directory.CreateDirectory(RuntimeData.ExportsOutputDirectory);
+            //}
 
             // Proxy DLL Template.
             if (RuntimeData.ProxyDllTemplate != "")

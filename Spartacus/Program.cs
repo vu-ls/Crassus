@@ -31,7 +31,7 @@ Examples:
 
 Parse an existing PML event log output
 
-    --pml C:\tmp\Bootlog.PML
+    C:\tmp\Bootlog.PML
 
 ";
                 Logger.Info(help, true, false);
@@ -113,7 +113,7 @@ Parse an existing PML event log output
                     Logger.Info("CSV Output stored in: " + RuntimeData.CsvOutputFile);
                     if (RuntimeData.ExportsOutputDirectory != "")
                     {
-                        Logger.Info("Proxy DLLs stored in: " + RuntimeData.ExportsOutputDirectory);
+                        Logger.Info("Proxy DLL sources stored in: " + RuntimeData.ExportsOutputDirectory);
                     }
                 }
 //            }
