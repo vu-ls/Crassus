@@ -104,7 +104,12 @@ namespace Spartacus.Spartacus
                 string PathName = item.Key.ToLower();
                 if (File.Exists(PathName))
                 {
-                   // Logger.Info(PathName);
+                    // Logger.Info(PathName);
+                    if (item.Value.EventClass != EventClassType.Process)
+                    {
+                        // This is an access to an existing file, so let's not be bothered by non process (load library, start process) events
+                        continue;
+                    }
                     // This is a library or EXE that was actually loaded.
                     // Let's check the privileges of the file and directory to make sure that they're sane.
                     bool Writable = CheckPathACLs(PathName);
@@ -136,6 +141,7 @@ namespace Spartacus.Spartacus
                             string LoadedInfo = "";
                             if (PathName.EndsWith(".dll"))
                             {
+                                // If it's a DLL, then we should share if it's a 64-bit or a 32-bit process attempting to load the file.
                                 if (is64bit)
                                 {
                                     LoadedInfo = " (64-bit, " + item.Value.Process.Integrity + " Integrity)";
@@ -165,10 +171,13 @@ namespace Spartacus.Spartacus
                 }
                 else
                 {
-                    // Must be a missing file.  Let's check the directory ACLs.
+                    // Must be a missing file. We don't know for sure what the program would do with the file, but we can guess.
+                    // If it's a DLL, it's *probably* to load it, but that's just a guess.
+                    // Let's check the directory ACLs.
                     string LoadedInfo = "";
                     if (PathName.EndsWith(".dll"))
                     {
+                        // If it's a DLL, then we should share if it's a 64-bit or a 32-bit process attempting to load the file.
                         if (is64bit)
                         {
                             LoadedInfo = " (64-bit, " + item.Value.Process.Integrity + " Integrity)";
@@ -177,6 +186,21 @@ namespace Spartacus.Spartacus
                         {
                             LoadedInfo = " (32-bit, " + item.Value.Process.Integrity + " Integrity)";
                         }
+                    }
+                    else if (PathName.EndsWith(".exe") || PathName.EndsWith("openssl.cnf"))
+                    {
+                        if (is64bit)
+                        {
+                            LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
+                        }
+                        else
+                        {
+                            LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
+                        }
+                    }
+                    if (PathName.EndsWith("openssl.cnf"))
+                    {
+                        //Logger.Success(PathName);
                     }
 
                     string MissingFileDir = Path.GetDirectoryName(PathName);
@@ -192,12 +216,18 @@ namespace Spartacus.Spartacus
                         Logger.Success("We should be able to place the missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
                         isBadItem = true;
                     }
+                    else if (!MissingFileDir.StartsWith("c:\\"))
+                    {
+                        Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
+                        isBadItem = true;
+                    }
 
                 }
                 if (isBadItem)
                 {
                     FoundBad = true;
                     //EventsOfInterest.Remove(item.Key);
+                    Logger.Verbose("Potentially exploitable path access: " + item.Key);
                     ConfirmedEventsOfInterest.Add(item.Key, item.Value);
                 }
                 
@@ -283,7 +313,7 @@ namespace Spartacus.Spartacus
                     {
                         if (mySIDs.Contains(rule.IdentityReference))
                         {
-                            //Logger.Info("SID " + SID + " can write to this file!");
+//                            Logger.Info("SID " + SID + " can write to this file!");
                             writeAllow = true;
                         }
                     }
@@ -704,7 +734,7 @@ namespace Spartacus.Spartacus
                     break;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe")
+                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe")
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
                     // e.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
@@ -715,10 +745,9 @@ namespace Spartacus.Spartacus
                 if (e.EventClass == EventClassType.Process)
                 {
                     ProcessEvent = true;
-                    // VolumeMount doesn't make sense here because Spartacus was written in a way where every event it cares about
-                    // is a FileSystem operation. But here we are looking at a Process operation.
-                    // "VolumeMount" in FileSystem land is 1, which is "Create Process" in Process land.
-                    if ( e.Operation == EventFileSystemOperation.VolumeMount)
+                    // Yes, Process_Create and Load_image aren't really FileSystem operations.  But Spartacus wasn't originally designed
+                    // with the concept of looking anything other than FileSystem oeprations, so...
+                    if ( e.Operation == EventFileSystemOperation.Process_Create)
                     {
                         // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
                         if (e.Path.ToLower().Contains("\\microsoftedgeupdate.exe"))
@@ -726,8 +755,7 @@ namespace Spartacus.Spartacus
                             continue;
                         }
                     }
-                    // "ReadFile2" in FileSystem land is 5, which is "Load Image" in Process land.
-                    else if (e.Operation == EventFileSystemOperation.ReadFile2)
+                    else if (e.Operation == EventFileSystemOperation.Load_Image)
                     {
                         // 2) Privileged Load Library on a file that is itself or in a directory that is mutable by a non-privileged user
                     }
@@ -772,8 +800,20 @@ namespace Spartacus.Spartacus
 
                 // By now, we are dealing with the legacy Spartacus behavior: Looking for "interesting" things that are missing.
                 // But there are probably more interesting files than DLLs...
-                if (!p.EndsWith(".dll".ToLower()) && !p.EndsWith(".exe".ToLower()))
+                if (!p.EndsWith(".dll".ToLower()) && !p.EndsWith(".exe".ToLower()) && !p.EndsWith("openssl.cnf".ToLower()))
                 {
+                    continue;
+                }
+
+                if (p.Contains("local\\microsoft\\onedrive\\"))
+                {
+                    // Windows does things with OneDrive that look to be exploitable, but don't seem to be. Ignore these.
+                    continue;
+                }
+
+                if (p.Contains("appdata\\local\\microsoft\\windowsapps\\backup"))
+                {
+                    // This shouldn't be exploitable
                     continue;
                 }
                 //TODO: There are a couple of user-writable directories within SystemRoot.
@@ -783,14 +823,14 @@ namespace Spartacus.Spartacus
                 //    continue;
                 //}
 
-                // Don't add duplicates.
-                if (EventsOfInterest.ContainsKey(p))
+                    // Don't add duplicates.
+                    if (EventsOfInterest.ContainsKey(p))
                 {
                     continue;
                 }
 
                 EventsOfInterest.Add(p, e);
-                //Logger.Info(p);
+                Logger.Debug(p);
             } while (true);
             Console.WriteLine("");           
             Logger.Info("Found " + String.Format("{0:N0}", EventsOfInterest.Count()) + " privileged events of interest...");

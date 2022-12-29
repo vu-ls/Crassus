@@ -150,7 +150,6 @@ namespace Spartacus.ProcMon
             {
                 EventClass = (EventClassType)logEvent.EventClass,
                 Operation = (EventFileSystemOperation)logEvent.OperationType,
-                //ProcessOperation = (EventProcessOperation)logEvent.oper
                 Result = (EventResult)logEvent.Result,
                 Path = eventPath,
                 Process = LogProcesses[logEvent.indexProcessEvent],

@@ -175,10 +175,15 @@ namespace Spartacus.Spartacus.CommandLine
             {
                 RuntimeData.ProcMonLogFile = Environment.GetCommandLineArgs()[1];
             }
-            
+
+            string ContinuePMLFile = RuntimeData.ProcMonLogFile.ToLower().Replace(".pml", "") + "-1.pml";
             if (!File.Exists(RuntimeData.ProcMonLogFile))
             {
                 throw new Exception("PML file does not exist");
+            }
+            else if (File.Exists(ContinuePMLFile))
+            {
+                Logger.Warning(RuntimeData.ProcMonLogFile + " appears to be a multi-file PML. Please re-save this log to get complete output!");
             }
         }
 
