@@ -1,6 +1,6 @@
-﻿using Spartacus.ProcMon;
-using Spartacus.Properties;
-using Spartacus.Spartacus.CommandLine;
+﻿using Crassus.ProcMon;
+using Crassus.Properties;
+using Crassus.Crassus.CommandLine;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,10 +10,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using static Spartacus.ProcMon.ProcMonConstants;
-using static Spartacus.Spartacus.PEFileExports;
+using static Crassus.ProcMon.ProcMonConstants;
+using static Crassus.Crassus.PEFileExports;
 
-namespace Spartacus.Spartacus
+namespace Crassus.Crassus
 {
     class EventProcessor
     {
@@ -445,7 +445,7 @@ namespace Spartacus.Spartacus
 
             private string LookForFileIfNeeded(string filePath)
         {
-            // When we get a path it may be either x32 or a x64. As Spartacus is x64 we can search in the x32 locations if needed.
+            // When we get a path it may be either x32 or a x64. As Crassus is x64 we can search in the x32 locations if needed.
             if (File.Exists(filePath))
             {
                 return filePath;
@@ -745,7 +745,7 @@ namespace Spartacus.Spartacus
                 if (e.EventClass == EventClassType.Process)
                 {
                     ProcessEvent = true;
-                    // Yes, Process_Create and Load_image aren't really FileSystem operations.  But Spartacus wasn't originally designed
+                    // Yes, Process_Create and Load_image aren't really FileSystem operations.  But Crassus wasn't originally designed
                     // with the concept of looking anything other than FileSystem oeprations, so...
                     if ( e.Operation == EventFileSystemOperation.Process_Create)
                     {
@@ -798,7 +798,7 @@ namespace Spartacus.Spartacus
 
                 string p = e.Path.ToLower();
 
-                // By now, we are dealing with the legacy Spartacus behavior: Looking for "interesting" things that are missing.
+                // By now, we are dealing with the legacy Crassus behavior: Looking for "interesting" things that are missing.
                 // But there are probably more interesting files than DLLs...
                 if (!p.EndsWith(".dll".ToLower()) && !p.EndsWith(".exe".ToLower()) && !p.EndsWith("openssl.cnf".ToLower()))
                 {

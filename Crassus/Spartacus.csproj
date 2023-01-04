@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7E9729AA-4CF2-4D0A-8183-7FB7CE7A5B19}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Spartacus</RootNamespace>
-    <AssemblyName>Spartacus</AssemblyName>
+    <RootNamespace>Crassus</RootNamespace>
+    <AssemblyName>Crassus</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -84,12 +84,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Spartacus\CommandLine\CommandLineParser.cs" />
-    <Compile Include="Spartacus\CommandLine\RuntimeData.cs" />
-    <Compile Include="Spartacus\Detect.cs" />
-    <Compile Include="Spartacus\EventProcessor.cs" />
-    <Compile Include="Spartacus\Manager.cs" />
-    <Compile Include="Spartacus\PEFileExports.cs" />
+    <Compile Include="Crassus\CommandLine\CommandLineParser.cs" />
+    <Compile Include="Crassus\CommandLine\RuntimeData.cs" />
+    <Compile Include="Crassus\Detect.cs" />
+    <Compile Include="Crassus\EventProcessor.cs" />
+    <Compile Include="Crassus\Manager.cs" />
+    <Compile Include="Crassus\PEFileExports.cs" />
     <Compile Include="Utils\Logger.cs" />
     <Compile Include="ProcMon\ProcMonConfig.cs" />
     <Compile Include="ProcMon\ProcMonConstants.cs" />

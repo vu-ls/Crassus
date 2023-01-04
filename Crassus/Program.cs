@@ -1,6 +1,6 @@
-﻿using Spartacus.ProcMon;
-using Spartacus.Spartacus;
-using Spartacus.Spartacus.CommandLine;
+﻿using Crassus.ProcMon;
+using Crassus.Crassus;
+using Crassus.Crassus.CommandLine;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,10 +8,15 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
 
-namespace Spartacus
+namespace Crassus
 {
     class Program
     {
+        static private bool IsCurrentUserAnAdmin()
+        {
+            var principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
         static private bool IsCurrentUserInAdminGroup()
         {
             // https://learn.microsoft.com/en-us/troubleshoot/windows-server/identity/security-identifiers-in-windows
@@ -31,14 +36,12 @@ namespace Spartacus
             if (args.Length == 0)
             {
                 string help = 
-$@"Spartacus v{appVersion} [ Accenture Security ]
-- For more information visit https://github.com/Accenture/Spartacus
+$@"Crassus v{appVersion} [ Will Dormann ]
+- For more information visit https://github.com/wdormann/crassus
 
-Usage: Spartacus.exe [options]
+Usage: Crassus.exe [PMLFile] [options]
 
---pml                   Location (file) to store the ProcMon event log file. If the file exists,
-                        it will be overwritten. When used with --existing-log it will indicate
-                        the event log file to read from and will not be overwritten.
+[PMLFile]               Location (file) of the ProcMon event log file.
 --verbose               Enable verbose output.
 --debug                 Enable debug output.
 
@@ -47,7 +50,7 @@ Examples:
 
 Parse an existing PML event log output
 
-    C:\tmp\Bootlog.PML
+Crassus.exe C:\tmp\Bootlog.PML
 
 ";
                 Logger.Info(help, true, false);
@@ -59,7 +62,7 @@ Parse an existing PML event log output
             }
 
             
-            Logger.Info($"Spartacus v{appVersion}");
+            Logger.Info($"Crassus v{appVersion}");
 
             try
             {
@@ -121,6 +124,12 @@ Parse an existing PML event log output
                     if (IsCurrentUserInAdminGroup())
                     {
                         Logger.Warning("You are logged in as an admin! Some results may simply be UAC bypasses.");
+                    }
+
+                    if (IsCurrentUserAnAdmin())
+                    {
+                        Logger.Error("This utility will not function with admin privileges");
+                        return;
                     }
 
                     Logger.Info("Reading events file...");

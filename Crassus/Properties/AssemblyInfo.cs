@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Spartacus")]
-[assembly: AssemblyDescription("DLL Hijacking Discovery")]
+[assembly: AssemblyTitle("Crassus")]
+[assembly: AssemblyDescription("Windows Privilege Escalation Discovery")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Accenture Security")]
-[assembly: AssemblyProduct("Spartacus")]
+[assembly: AssemblyCompany("Will Dormann")]
+[assembly: AssemblyProduct("Crassus")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("7e9729aa-4cf2-4d0a-8183-7fb7ce7a5b19")]
+[assembly: Guid("7e9729aa-4cf2-4d0a-8183-7fb7ce7a5b1a")]
 
 // Version information for an assembly consists of the following four values:
 //

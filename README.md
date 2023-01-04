@@ -1,26 +1,23 @@
-# Spartacus DLL Hijacking
+# Crassus Windows privilege escalation
 
-## Why "Spartacus"?
+## Why "Crassus"?
 
-If you have seen the film Spartacus from 1960, you will remember the scene where the Romans are asking for Spartacus to give himself up. The moment the real Spartacus stood up, a lot of others stood up as well and claimed to be him using the "I AM SPARTACUS" phrase.
+Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus), which finds DLL hijacking opportunities on Windows. Using Spartacus as a starting point, we created Crassus to extend Windows privilege escalation finding capabilites beyond simply looking for missing files. The ACLs used by files and directories of privileged processes can find more than just [looking for missing files](https://vuls.cert.org/confluence/display/Wiki/2021/06/21/Finding+Privilege+Escalation+Vulnerabilities+in+Windows+using+Process+Monitor) to achieve the goal.
 
-When a process that is vulnerable to DLL Hijacking is asking for a DLL to be loaded, it's kind of asking "WHO IS VERSION.DLL?" and random directories start claiming "I AM VERSION.DLL" and "NO, I AM VERSION.DLL". And thus, Spartacus.
+## Did you really make yet another privilege escalation discovery tool?
 
-## Did you really make yet another DLL Hijacking discovery tool?
-
-...but with a twist as Spartacus is utilising the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. You can leave ProcMon running for hours and discover 2nd and 3rd level (ie an app that loads another DLL that loads yet another DLL when you use a specific feature of the parent app) DLL Hijacking vulnerabilities. It will also automatically generate proxy DLLs with all relevant exports for vulnerable DLLs.
+...but with a twist as Crassus is utilising the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. You can leave ProcMon running for hours and discover 2nd and 3rd level (ie an app that loads another DLL that loads yet another DLL when you use a specific feature of the parent app) DLL Hijacking vulnerabilities. It will also automatically generate proxy DLLs with all relevant exports for vulnerable DLLs.
 
 ## Features
 
-* Parsing ProcMon PML files natively. The config (PMC) and log (PML) parsers have been implemented by porting partial functionality to C# from https://github.com/eronnen/procmon-parser/. You can find the format specification [here](https://github.com/eronnen/procmon-parser/tree/master/docs).
-* Spartacus will create proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Spartacus will create a `version.dll.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
+* Parsing ProcMon PML files natively. The log (PML) parser has been implemented by porting partial functionality to C# from https://github.com/eronnen/procmon-parser/. You can find the format specification [here](https://github.com/eronnen/procmon-parser/tree/master/docs).
+* Crassus will create proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create a `version.dll.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
 * Able to process large PML files and store all DLLs of interest in an output CSV file. Local benchmark processed a 3GB file with 8 million events in 45 seconds.
-* `[Defence]` Monitoring mode trying to identify running applications proxying calls, as in "DLL Hijacking in progress". This is just to get any low hanging fruit and should not be relied upon.
 
 # Table of Contents
 
 * [Screenshots](#screenshots)
-    * [Spartacus Execution](#spartacus-execution)
+    * [Crassus Execution](#Crassus-execution)
     * [CSV Output](#csv-output)
     * [Exports](#output-exports)
     * [Export DLL Functions](#export-dll-functions)
@@ -34,9 +31,9 @@ When a process that is vulnerable to DLL Hijacking is asking for a DLL to be loa
 
 # Screenshots
 
-## Spartacus Execution
+## Crassus Execution
 
-![Running Spartacus](screenshots/runtime.png "Running Spartacus")
+![Running Crassus](screenshots/runtime.png "Running Crassus")
 
 ## CSV Output
 
@@ -73,15 +70,6 @@ When a process that is vulnerable to DLL Hijacking is asking for a DLL to be loa
 | Argument                  | Description |
 | ------------------------- | ----------- |
 | `--pml`                   | Location (file) to store the ProcMon event log file. If the file exists, it will be overwritten. When used with `--existing-log` it will indicate the event log file to read from and will not be overwritten. |
-| `--pmc`                   | Define a custom ProcMon (PMC) file to use. This file will not be modified and will be used as is. |
-| `--csv`                   | Location (file) to store the CSV output of the execution. This file will include only the DLLs that were marked as NAME_NOT_FOUND, PATH_NOT_FOUND, and were in user-writable locations (it excludes anything in the `Windows` and `Program Files` directories) |
-| `--exe`                   | Define process names (comma separated) that you want to track, helpful when you are interested only in a specific process. |
-| `--exports`               | Location (folder) in which all the proxy DLL files will be saved. Proxy DLL files will only be generated if this argument is used. |
-| `--procmon`               | Location (file) of the SysInternals Process Monitor `procmon.exe` or `procmon64.exe` |
-| `--proxy-dll-template`    | Define a DLL template to use for generating the proxy DLL files. Only relevant when `--exports` is used. All `#pragma` exports are inserted by replacing the `%_PRAGMA_COMMENTS_%` string, so make sure your template includes that string in the relevant location. |
-| `--existing-log`          | Switch to indicate that Spartacus should process an existing ProcMon event log file (PML). To indicate the event log file use `--pml`, useful when you have been running ProcMon for hours or used it in Boot Logging. |
-| `--all`                   | By default any DLLs in the Windows or Program Files directories will be skipped. Use this to include those directories in the output. |
-| `--detect`                | Try to identify DLLs that are proxying calls (like 'DLL Hijacking in progress'). This isn't a feature to be relied upon, it's there to get the low hanging fruit. |
 | `--verbose`               | Enable verbose output. |
 | `--debug`                 | Enable debug output. |
 
@@ -163,7 +151,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 If you wish to use your own template, just make sure the `%_PRAGMA_COMMENTS_%` is in the right place.
 
 # Contributions
-Whether it's a typo, a bug, or a new feature, Spartacus is very open to contributions as long as we agree on the following:
+Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:
 * You are OK with the MIT license of this project.
 * Before creating a pull request, create an issue so it could be discussed before doing any work as internal development is not tracked via the public GitHub repository. Otherwise you risk having a pull request rejected if for example we are already working on the same/similar feature, or for any other reason.
 

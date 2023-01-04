@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static Spartacus.ProcMon.ProcMonConstants;
+using static Crassus.ProcMon.ProcMonConstants;
 
 
-namespace Spartacus.ProcMon
+namespace Crassus.ProcMon
 {
     class ProcMonPML
     {
@@ -105,7 +105,7 @@ namespace Spartacus.ProcMon
             //stream.Seek(pVoidSize * 5 + 0x14, SeekOrigin.Current);
             //reader.ReadInt32(); // Should be 0
 
-            // This is all silly.  But it's an artifact of how Spartacus was originally coded.
+            // This is all silly.  But it's an artifact of how Crassus was originally coded.
             string eventPath = "";
             // In the case of Load Image, we want to seek 72
             if (logEvent.EventClass == 1 && logEvent.OperationType == 5)
@@ -168,7 +168,14 @@ namespace Spartacus.ProcMon
 
         private void Load()
         {
-            stream = File.Open(PMLFile, FileMode.Open, FileAccess.Read);
+            try
+            {
+                stream = File.Open(PMLFile, FileMode.Open, FileAccess.Read);
+            }
+            catch
+            {
+                Logger.Error("Cannot open " + PMLFile);
+            }
             reader = new BinaryReader(stream, Encoding.Unicode);
 
             Logger.Debug("Reading event log header...");

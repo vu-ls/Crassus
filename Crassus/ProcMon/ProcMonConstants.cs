@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace Spartacus.ProcMon
+namespace Crassus.ProcMon
 {
     class ProcMonConstants
     {

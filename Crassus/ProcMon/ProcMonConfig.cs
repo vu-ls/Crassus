@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using static Spartacus.ProcMon.ProcMonConstants;
+using static Crassus.ProcMon.ProcMonConstants;
 
-namespace Spartacus.ProcMon
+namespace Crassus.ProcMon
 {
     class ProcMonConfig
     {

@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Spartacus.Spartacus
+namespace Crassus.Crassus
 {
     class Detect
     {
@@ -64,7 +64,7 @@ namespace Spartacus.Spartacus
                 catch (Exception e)
                 {
                     // Sometimes we'll try to access a process that has already exited.
-                    Logger.Error(e.Message + " - nothing to worrry about, Spartacus keeps running");
+                    Logger.Error(e.Message + " - nothing to worrry about, Crassus keeps running");
                 }
 
                 // Adding a sleep here to give the CPU some breathing room.

@@ -1,5 +1,5 @@
-﻿using Spartacus.ProcMon;
-using Spartacus.Spartacus.CommandLine;
+﻿using Crassus.ProcMon;
+using Crassus.Crassus.CommandLine;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spartacus.Spartacus
+namespace Crassus.Crassus
 {
     class Manager
     {

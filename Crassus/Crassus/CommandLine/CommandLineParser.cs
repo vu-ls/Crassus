@@ -1,5 +1,5 @@
-﻿using Spartacus.ProcMon;
-using Spartacus.Properties;
+﻿using Crassus.ProcMon;
+using Crassus.Properties;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spartacus.Spartacus.CommandLine
+namespace Crassus.Crassus.CommandLine
 {
     class CommandLineParser
     {

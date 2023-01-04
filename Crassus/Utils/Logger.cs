@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Spartacus
+namespace Crassus
 {
     class Logger
     {
@@ -81,7 +81,7 @@ namespace Spartacus
             // Write to file too.
             if (ConsoleLogFile == "")
             {
-                ConsoleLogFile = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + @"\spartacus.log";
+                ConsoleLogFile = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + @"\Crassus.log";
                 if (!File.Exists(ConsoleLogFile))
                 {
                     File.Create(ConsoleLogFile).Dispose();
