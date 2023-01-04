@@ -59,7 +59,7 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 
 ## Execution Flow
 
-1. In Process Monitor, select the `Enable Boot Logging` option. (screenshots/procmon_boot_log.png "Process Monitor Boot Logging option")
+1. In Process Monitor, select the `Enable Boot Logging` option. !(screenshots/procmon_boot_log.png "Process Monitor Boot Logging option")
 2. Reboot.
 3. Once you have logged in and Windows has settled, run Process Monitor once again.
 4. When prompted, save the boot log.
