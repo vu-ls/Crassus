@@ -127,7 +127,6 @@
 
 VOID Payload() {
     // Run your payload here.
-    WinExec("calc", 1);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
