@@ -199,7 +199,13 @@ Crassus finds many ways to achieve privilege escaltion with this software, inclu
 * Renaming the directory of a privileged EXE to allow user placement of an EXE of the same name.
 ![Crassus output for Atlassian Bitbucket](screenshots/bitbucket.png "Crassus output for Atlassian Bitbucket")
 
-### DLL Hijacking
+### EXE Hijacking
+
+In the Crassus output, we can see that `c:\atlassian\bitbucket\7.9.1\elasticsearch\bin\elasticsearch-service-x64.exe` is privileged, but since it's running we cannot simply replace it. However, we can use another trick to hijack it. We can simply rename the directory that it lives in, create a new directory of the same name, and plant our payload there as the same name. Windows won't care about this.
+!["Rename the directory that a privileged process is running from"](screenshots/bitbucket_rename_dir.png)
+
+Once we reboot with a Process monitor boot log, we can see that our planted `elasticsearch-service-x64.exe` file is running instead of the real one, based on the Windows Calculator icon.
+!["Planted calc.exe as elasticsearch-service-x64.exe"](screenshots/elasticsearch_planted.png)
 
 
 # Contributions
