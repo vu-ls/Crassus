@@ -6,13 +6,14 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 
 ## Did you really make yet another privilege escalation discovery tool?
 
-...but with a twist as Crassus is utilising the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. You can leave ProcMon running for hours and discover 2nd and 3rd level (ie an app that loads another DLL that loads yet another DLL when you use a specific feature of the parent app) DLL Hijacking vulnerabilities. It will also automatically generate proxy DLLs with all relevant exports for vulnerable DLLs.
+...but with a twist as Crassus is utilising the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. Typical usage is to generate a boot log using Process Monitor and then parse it with Crassus. It will also automatically generate source code for proxy DLLs with all relevant exports for vulnerable DLLs.
 
 ## Features
 
 * Parsing ProcMon PML files natively. The log (PML) parser has been implemented by porting partial functionality to C# from https://github.com/eronnen/procmon-parser/. You can find the format specification [here](https://github.com/eronnen/procmon-parser/tree/master/docs).
-* Crassus will create proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create a `version.dll.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
-* Able to process large PML files and store all DLLs of interest in an output CSV file. Local benchmark processed a 3GB file with 8 million events in 45 seconds.
+* Crassus will create source code for proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create a `version.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
+* For other events of interest, such as creating a process or loading a library, the ability for unprivileged users to modify the file or any parts of the path to the file are is investigated.
+* Able to process large PML files and store all events of interest in an output CSV file. Local benchmark processed a 3GB file with 8 million events in 45 seconds.
 
 # Table of Contents
 
@@ -26,6 +27,13 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
     * [Command Line Arguments](#command-line-arguments)
     * [Examples](#examples)
     * [Proxy DLL Template](#proxy-dll-template)
+    * [openssl.cnf Template](#openssl-template)
+* [Compiling Proxy DLLs](#compiling-proxy-dlls)
+    * [Visual Studio](#visual-studio)
+    * [mingw](#mingw)
+* [Real World Examples](#real-world-examples)
+    * [Acronis True Image](#acronis-true-image)
+    * [Atlassian Bitbucket](#atlassian-bitbucket)
 * [Contributions](#contributions)
 * [Credits](#credits)
 
@@ -51,65 +59,31 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 
 ## Execution Flow
 
-1. Generate a ProcMon (PMC) config file on the fly, based on the arguments passed. The filters that will be set are:
-    * Operation is `CreateFile`.
-    * Path ends with `.dll`.
-    * Process name is not `procmon.exe` or `procmon64.exe`.
-    * Enable `Drop Filtered Events` to ensure minimum PML output size.
-    * Disable `Auto Scroll`.
-2. Execute Process Monitor.
-3. Halt its execution until the user presses `ENTER`.
-4. Terminates Process Monitor.
-5. Parses the output Event Log (PML) file.
-    1. Creates a CSV file with all the NAME_NOT_FOUND and PATH_NOT_FOUND DLLs.
-    2. Compares the DLLs from above and tries to identify the DLLs that were actually loaded.
-    3. For every "found" DLL it generates a proxy DLL with all its export functions.
+1. In Process Monitor, select the `Enable Boot Logging` option. (screenshots/procmon_boot_log.png "Process Monitor Boot Logging option")
+2. Reboot.
+3. Once you have logged in and Windows has settled, run Process Monitor once again.
+4. When prompted, save the boot log.
+5. Reset the default Process Monitor filter using `Ctrl-R`.
+6. Save this log file, e.g. to `boot.PML`. The reason for re-saving the log file is twofold:
+    1. Older versions of Process Monitor do not save boot logs as a single file.
+    2. Boot logs by default will be unfiltered, which may contain extra noise, such as a local-user DLL hijacking in the launching of of Process Monitor itself.
 
 ## Command Line Arguments
 
 | Argument                  | Description |
 | ------------------------- | ----------- |
-| `--pml`                   | Location (file) to store the ProcMon event log file. If the file exists, it will be overwritten. When used with `--existing-log` it will indicate the event log file to read from and will not be overwritten. |
+| `--pml`                   | Location (file) of the existing ProcMon event log file.|
 | `--verbose`               | Enable verbose output. |
 | `--debug`                 | Enable debug output. |
 
 ## Examples
 
-Collect all events and save them into `C:\Data\logs.pml`. All vulnerable DLLs will be saved as `C:\Data\VulnerableDLLFiles.csv` and all proxy DLLs in `C:\Data\DLLExports`.
+Collect all events and save them into `C:\tmp\boot.PML`. All vulnerable DLLs will be saved as `C:\tmp\results.csv` and all proxy DLLs in `C:\tmp\stubs`.
 
 ```
---procmon C:\SysInternals\Procmon.exe --pml C:\Data\logs.pml --csv C:\Data\VulnerableDLLFiles.csv --exports C:\Data\DLLExports --verbose
+C:\tmp> Crassus.exe boot.PML
 ```
 
-Collect events only for `Teams.exe` and `OneDrive.exe`.
-
-```
---procmon C:\SysInternals\Procmon.exe --pml C:\Data\logs.pml --csv C:\Data\VulnerableDLLFiles.csv --exports C:\Data\DLLExports --verbose --exe "Teams.exe,OneDrive.exe"
-```
-
-Collect events only for `Teams.exe` and `OneDrive.exe`, and use a custom proxy DLL template at `C:\Data\myProxySkeleton.cpp`.
-
-```
---procmon C:\SysInternals\Procmon.exe --pml C:\Data\logs.pml --csv C:\Data\VulnerableDLLFiles.csv --exports C:\Data\DLLExports --verbose --exe "Teams.exe,OneDrive.exe" --proxy-dll-template C:\Data\myProxySkeleton.cpp
-```
-
-Collect events only for `Teams.exe` and `OneDrive.exe`, but don't generate proxy DLLs.
-
-```
---procmon C:\SysInternals\Procmon.exe --pml C:\Data\logs.pml --csv C:\Data\VulnerableDLLFiles.csv --verbose --exe "Teams.exe,OneDrive.exe"
-```
-
-Parse an existing PML event log output, save output to CSV, and generate proxy DLLs.
-
-```
---existing-log --pml C:\MyData\SomeBackup.pml --csv C:\Data\VulnerableDLLFiles.csv --exports C:\Data\DLLExports
-```
-
-Run in monitoring mode and try to detect any applications that is proxying DLL calls.
-
-```
---detect
-```
 
 ## Proxy DLL Template
 
@@ -124,10 +98,10 @@ The only thing to be aware of is that the `pragma` DLL will be using a hardcoded
 
 #include <windows.h>
 #include <string>
-#include <atlstr.h>  
 
 VOID Payload() {
     // Run your payload here.
+    WinExec("calc.exe", 1);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
@@ -149,6 +123,56 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 ```
 
 If you wish to use your own template, just make sure the `%_PRAGMA_COMMENTS_%` is in the right place.
+
+## openssl.cnf Template
+
+For applications that unsafely use the `OPENSSLDIR` variable value, a crafted `openssl.cnf` file can be placed in the noted location. For this example, the software will load `C:\tmp\calc.dll`. Be sure to use a 32-bit library to target 32-bit processes, and a 64-bit library to target 64-bit processes.
+
+```openssl_conf = openssl_init
+[openssl_init]
+# This will attempt to load the file c:\tmp\calc.dll as part of OpenSSL initialization
+# Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
+/tmp/calc = asdf
+}
+```
+
+# Compiling Proxy DLLs
+
+## Visual Studio
+
+Compilation is possible using the `cl.exe` binary included with Visual Studio. Specifically:
+```
+cl.exe /LD <target>.cpp
+```
+
+1. Run the relevant `vcvars` batch file to set up the enviroment. Specifically, `vcvars64.bat` to compile a 64-bit DLL, or `vcvars32.bat` to compile a 32-bit DLL.
+![Visual Studio 64-bit compilation](screenshots/vs_compile64.png "Visual Studio 64-bit compilation")
+2. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
+
+## mingw
+\\
+
+
+# Real World Examples
+
+## Acronis True Image
+
+As outlined in [VU#114757](https://kb.cert.org/vuls/id/114757), older Acronis software contains multiple privilege escalation vulnerabilities.
+1. Placement of `openssl.cnf` in a user-creatable location.
+2. Inappropriate ACLs in the `C:\ProgramData\Acronis` directory.
+
+Crassus finds both of these issues automatically.
+![Crassus output for Acronis](screenshots/acronis.png "Crassus output for Acronis")
+
+## Atlassian Bitbucket
+
+As outlined in [VU#240785](https://kb.cert.org/vuls/id/240785), older Atlassian Bitbucket software is vulnerable to privilege escalation due to weak ACLs of the installation directory. As with any Windows software that installs to a location outside of `C:\Program Files\` or other ACL-restricted locations, it is up to the software installer to explicitly set ACLs on the target directory.
+
+Crassus finds many ways to achieve privilege escaltion with this software, including:
+* Placement of missing DLLs in user-writable locations.
+* Placement of missing EXEs in user-writable locations.
+* Renaming the directory of a privileged EXE to allow user placement of an EXE of the same name.
+![Crassus output for Atlassian Bitbucket](screenshots/bitbucket.png "Crassus output for Atlassian Bitbucket")
 
 # Contributions
 Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:

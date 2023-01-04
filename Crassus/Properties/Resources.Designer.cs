@@ -81,7 +81,6 @@ namespace Crassus.Properties {
         ///
         ///#include &lt;windows.h&gt;
         ///#include &lt;string&gt;
-        ///#include &lt;atlstr.h&gt;  
         ///
         ///VOID Payload() {
         ///    // Run your payload here.

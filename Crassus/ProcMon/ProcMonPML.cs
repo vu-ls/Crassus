@@ -175,6 +175,7 @@ namespace Crassus.ProcMon
             catch
             {
                 Logger.Error("Cannot open " + PMLFile);
+                return;
             }
             reader = new BinaryReader(stream, Encoding.Unicode);
 

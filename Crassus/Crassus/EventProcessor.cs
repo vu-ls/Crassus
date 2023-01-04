@@ -86,7 +86,6 @@ namespace Crassus.Crassus
             Logger.Verbose("Found " + String.Format("{0:N0}", MissingDlls.Count()) + " unique DLLs...");
             //////////////////////////////////////////////////////////////////////////////////
 
-
             //Now try to find the actual DLL that was loaded. For example if 'version.dll' was missing, identify
             // the location it was eventually loaded from.
             watch.Restart();
@@ -95,11 +94,6 @@ namespace Crassus.Crassus
             IdentifySuccessfulEvents(MissingDlls);
 
             watch.Stop();
-            if (RuntimeData.Debug)
-            {
-                Logger.Debug(String.Format("IdentifySuccessfulEvents() took {0:N0}ms", watch.ElapsedMilliseconds));
-            }
-
 
             Logger.Info("Checking ACLs of events of interest...");
             //foreach (string PathName in Paths)
@@ -116,12 +110,7 @@ namespace Crassus.Crassus
                     is64bit = false;
                 }
                 string PathName = item.Key.ToLower();
-                if (PathName.StartsWith("c:\\programdata\\acronis\\") || PathName == "c:\\program files (x86)\\acronis\\agent\\aakore.exe")
-                {
-                    // TODO: Check GrantedPrivileges to confirm that what was granted matches what was asked for
-                    // rather than making this a specific hard-coded Acronis check.
-                    RuntimeData.HasAcronis = true;
-                }
+
                 if (File.Exists(PathName))
                 {
                     // Logger.Info(PathName);
@@ -141,7 +130,7 @@ namespace Crassus.Crassus
                     }
                     else
                     {
-                        if (HasWritePermissionOnDir(PathName))
+                        if (HasWritePermissionOnPath(PathName))
                         {
                             Logger.Warning("ACLs should allow writing to " + PathName + ", but we cannot. In use maybe?");
                             isBadItem = true;
@@ -262,7 +251,7 @@ namespace Crassus.Crassus
                     }
 
                     //Logger.Info("Checking if we can write to: " + MissingFileDir);
-                    if (HasWritePermissionOnDir(MissingFileDir))
+                    if (HasWritePermissionOnPath(MissingFileDir))
                     {
                         Logger.Success("ACLs should allow placement of missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
                         isBadItem = true;
@@ -283,6 +272,12 @@ namespace Crassus.Crassus
                 }
                 if (isBadItem)
                 {
+                    if (item.Key == "c:\\program files (x86)\\acronis\\agent\\aakore.exe" || item.Key == "c:\\program files\\acronis\\agent\\aakore.exe")
+                    {
+                        // TODO: Check GrantedPrivileges to confirm that what was granted matches what was asked for
+                        // rather than making this a specific hard-coded Acronis check.
+                        RuntimeData.HasAcronis = true;
+                    }
                     RuntimeData.FoundBad = true;
                     //EventsOfInterest.Remove(item.Key);
                     Logger.Verbose("Potentially exploitable path access: " + item.Key);
@@ -297,6 +292,11 @@ namespace Crassus.Crassus
             }
             else
             {
+                if (RuntimeData.Debug)
+                {
+                    Logger.Debug(String.Format("IdentifySuccessfulEvents() took {0:N0}ms", watch.ElapsedMilliseconds));
+                }
+
                 if (RuntimeData.HasAcronis)
                 {
                     Logger.Warning("Note that systems that have the Acronis Active Protection Service running will produce false positives.");
@@ -326,7 +326,7 @@ namespace Crassus.Crassus
 
         }
 
-        public static bool HasWritePermissionOnDir(string path)
+        public static bool HasWritePermissionOnPath(string path)
         // Loop through the SIDs to see if the current user might be able to write to the specified path
         {
             var mySID = WindowsIdentity.GetCurrent().User;
@@ -577,7 +577,7 @@ namespace Crassus.Crassus
                     }
                     alreadyProcessed.Add(Path.GetFileName(item.Value.Path).ToLower());
                     Logger.Info("Finding " + Path.GetFileName(item.Value.Path), false, true);
-                    string saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, Path.GetFileName(item.Value.Path) + ".cpp");
+                    string saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, Path.GetFileNameWithoutExtension(item.Value.Path) + ".cpp");
 
                     string actualLocation = "";
                     if (item.Value.FoundPath == "")
@@ -635,7 +635,7 @@ namespace Crassus.Crassus
                     //}
 
                     List<string> pragma = new List<string>();
-                    string pragmaTemplate = "#pragma comment(linker,\"/export:{0}={1}.{2},@{3}\")";
+                    string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
                     int steps = exports.Count() / 10;
                     if (steps == 0)
                     {
