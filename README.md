@@ -79,7 +79,7 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 
 ## Examples
 
-Collect all events and save them into `C:\tmp\boot.PML`. All vulnerable DLLs will be saved as `C:\tmp\results.csv` and all proxy DLLs in `C:\tmp\stubs`.
+Collect all events and save them into `C:\tmp\boot.PML`. All vulnerable DLLs will be saved as `C:\tmp\results.csv` and all proxy DLL source files in `C:\tmp\stubs`.
 
 ```
 C:\tmp> Crassus.exe boot.PML
