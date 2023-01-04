@@ -34,6 +34,7 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 * [Real World Examples](#real-world-examples)
     * [Acronis True Image](#acronis-true-image)
     * [Atlassian Bitbucket](#atlassian-bitbucket)
+    * [McAfee](#mcafee)
 * [Contributions](#contributions)
 * [Credits](#credits)
 
@@ -206,6 +207,15 @@ In the Crassus output, we can see that `c:\atlassian\bitbucket\7.9.1\elasticsear
 Once we reboot with a Process monitor boot log, we can see that our planted `elasticsearch-service-x64.exe` file is running instead of the real one, based on the Windows Calculator icon.
 !["Planted calc.exe as elasticsearch-service-x64.exe"](screenshots/elasticsearch_planted.png)
 
+## McAfee
+
+As outlined in [VU#287178](https://kb.cert.org/vuls/id/287178), older versions of McAfee software are vulnerable to privilege escalation via `openssl.cnf`. Let's have a look:
+![Crassus output for Mcafee](screenshots/mcafee.png "Crassus output for McAfee")
+
+To see why there are two different references to `openssl.cnf` in this boot log, we can refer to the `results.csv` file:
+![results.csv for Mcafee](screenshots/mcafee_results.png "results.csv for McAfee")
+
+Note that the loading of the `openssl.cnf` file from the `D:\` path will require further manual investigation, as the feasibility of loading such a path depends on the platform in question, and what access to the system is available. It may be possible to create an optical disk that provides an `openssl.cnf` file that also refers to a path that resolves to the optical drive as well.
 
 # Contributions
 Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:
