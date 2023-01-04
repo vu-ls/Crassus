@@ -151,21 +151,45 @@ cl.exe /LD <target>.cpp
 2. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
 
 ## mingw
-\\
 
+If Visual Studio isn't readily available, proxy DLLs can be compiled with mingw instead. But be aware that the .cpp files created by this tool will not cause a DLL with specific exports names and/or ordinals to be created. If you need to create a DLL with exports using mingw, this can be done through the use of `ADD_EXPORTS` and also `.def` files.
+
+```
+# Create a 32-bit DLL
+i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
+i686-w64-mingw32-g++ -shared -o curl32.dll curl.o -Wl,--out-implib,main.a
+
+# Create a 64-bit DLL
+x86_64-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
+x86_64-w64-mingw32-g++ -shared -o curl64.dll curl.o -Wl,--out-implib,main.a
+```
 
 # Real World Examples
 
 ## Acronis True Image
 
+### Crassus Analysis
+
 As outlined in [VU#114757](https://kb.cert.org/vuls/id/114757), older Acronis software contains multiple privilege escalation vulnerabilities.
-1. Placement of `openssl.cnf` in a user-creatable location.
+1. Placement of `openssl.cnf` in a unprivileged-user-creatable location.
 2. Inappropriate ACLs in the `C:\ProgramData\Acronis` directory.
 
 Crassus finds both of these issues automatically.
 ![Crassus output for Acronis](screenshots/acronis.png "Crassus output for Acronis")
 
+### DLL Hijacking
+
+By planting our compiled `curl.dll` file in the `C:\ProgramData\Acronis\Agent\var\atp-downloader\` directory and rebooting with a new Process Monitor boot log we can see that our payload that runs calc.exe runs, with SYSTEM privileges.
+!["Process Monitor log of planted curl.dll"](screenshots/acronis_planted.png)
+
+### openssl.cnf Placement
+
+The vulnerable Acronis software actually attempts to load `openssl.cnf` from two different locations. We'll place our template `openssl.cnf` file in `c:\jenkins_agent\workspace\tp-openssl-win-vs2013\17\product\out\standard\vs_2013_release\openssl\ssl`, and also a 32-bit `calc.dll` payload in `c:\tmp`.
+!["Process Monitor log of planted openssl.cnf"](screenshots/acronis_openssl.png)
+
 ## Atlassian Bitbucket
+
+### Crassus Analysis
 
 As outlined in [VU#240785](https://kb.cert.org/vuls/id/240785), older Atlassian Bitbucket software is vulnerable to privilege escalation due to weak ACLs of the installation directory. As with any Windows software that installs to a location outside of `C:\Program Files\` or other ACL-restricted locations, it is up to the software installer to explicitly set ACLs on the target directory.
 
@@ -174,6 +198,9 @@ Crassus finds many ways to achieve privilege escaltion with this software, inclu
 * Placement of missing EXEs in user-writable locations.
 * Renaming the directory of a privileged EXE to allow user placement of an EXE of the same name.
 ![Crassus output for Atlassian Bitbucket](screenshots/bitbucket.png "Crassus output for Atlassian Bitbucket")
+
+### DLL Hijacking
+
 
 # Contributions
 Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:
