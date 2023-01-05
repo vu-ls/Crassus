@@ -488,7 +488,7 @@ namespace Crassus.Crassus
             }
             catch
             {
-                if (dirPart.Length > 4)
+                if (dirPart.Length > 3)
                 {
                     dirPart = FindMutableDirPart(dirPart);
                 }
