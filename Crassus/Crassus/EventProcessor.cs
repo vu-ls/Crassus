@@ -126,7 +126,7 @@ namespace Crassus.Crassus
                     {
                         WritablePaths.Add(PathName);
                         Logger.Success("We can write to: " + PathName);
-                        RuntimeData.FoundBad = true;
+                        isBadItem = true;
                     }
                     else
                     {
@@ -213,7 +213,7 @@ namespace Crassus.Crassus
                         //Logger.Warning(PathName);
                         continue;
                     }
-                    if (libraryExtensionList.Contains(fileExtension))
+                    if (libraryExtensionList.Contains(fileExtension) || fileExtension == ".cnf")
                     {
                         // If it's a DLL, then we should share if it's a 64-bit or a 32-bit process attempting to load the file.
                         if (is64bit)
@@ -225,7 +225,7 @@ namespace Crassus.Crassus
                             LoadedInfo = " (32-bit, " + item.Value.Process.Integrity + " Integrity)";
                         }
                     }
-                    else if (PathName.EndsWith(".exe") || PathName.EndsWith("openssl.cnf"))
+                    else if (PathName.EndsWith(".exe"))
                     {
                         if (is64bit)
                         {
@@ -272,7 +272,7 @@ namespace Crassus.Crassus
                 }
                 if (isBadItem)
                 {
-                    if (item.Key == "c:\\program files (x86)\\acronis\\agent\\aakore.exe" || item.Key == "c:\\program files\\acronis\\agent\\aakore.exe")
+                    if (PathName == "c:\\program files (x86)\\acronis\\agent\\aakore.exe" || PathName == "c:\\program files\\acronis\\agent\\aakore.exe")
                     {
                         // TODO: Check GrantedPrivileges to confirm that what was granted matches what was asked for
                         // rather than making this a specific hard-coded Acronis check.
@@ -342,10 +342,15 @@ namespace Crassus.Crassus
             }
             catch
             {
+                Logger.Debug("Failed to get access control list for " + path);
                 return false;
             }
             if (accessControlList == null)
+            {
+                Logger.Debug("Empty access control list for " + path);
                 return false;
+            }
+                
             
             System.Security.AccessControl.AuthorizationRuleCollection accessRules = null;
             try
@@ -355,11 +360,16 @@ namespace Crassus.Crassus
             }
             catch
             {
+                Logger.Debug("Failed to get access rules for " + path);
                 return false;
             }
             
             if (accessRules == null)
+            {
+                Logger.Debug("Empty access access rules for " + path);
                 return false;
+            }
+                
 
             mySIDs.Add(mySID);
 
@@ -374,7 +384,7 @@ namespace Crassus.Crassus
                     {
                         if (mySIDs.Contains(rule.IdentityReference))
                         {
-//                            Logger.Info("SID " + SID + " can write to this file!");
+                            Logger.Debug("SID " + SID + " can write to " + path);
                             writeAllow = true;
                         }
                     }
@@ -383,6 +393,7 @@ namespace Crassus.Crassus
                     {
                         if (mySIDs.Contains(rule.IdentityReference))
                         {
+
                             writeDeny = true;
                         }
                     }

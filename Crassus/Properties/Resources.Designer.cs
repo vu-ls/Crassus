@@ -66,7 +66,7 @@ namespace Crassus.Properties {
         ///# This will attempt to load the file c:\tmp\calc.dll as part of OpenSSL initialization
         ///# Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
         ////tmp/calc = asdf
-        ///}.
+        ///.
         /// </summary>
         internal static string openssl_cnf {
             get {
@@ -84,6 +84,7 @@ namespace Crassus.Properties {
         ///
         ///VOID Payload() {
         ///    // Run your payload here.
+        ///    WinExec(&quot;calc.exe&quot;, 1);
         ///}
         ///
         ///BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
