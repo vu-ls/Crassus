@@ -1,4 +1,16 @@
-# Crassus Windows privilege escalation
+# Crassus Windows privilege escalation discovery tool
+
+# Quick start
+
+1. In [Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon), select the `Enable Boot Logging` option. 
+!["Process Monitor Boot Logging option"](screenshots/procmon_boot_log.png)
+2. Reboot.
+3. Once you have logged in and Windows has settled, run Process Monitor once again.
+4. When prompted, save the boot log, e.g., to `raw.PML`.
+5. Reset the default Process Monitor filter using `Ctrl-R`.
+6. Save this log file, e.g., to `boot.PML`.
+7. Run `Crassus.exe boot.PML`.
+8. Investigate any green colored results and the corresponding entries in `results.csv`.
 
 ## Why "Crassus"?
 
@@ -37,24 +49,6 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
     * [McAfee](#mcafee)
 * [Contributions](#contributions)
 * [Credits](#credits)
-
-# Screenshots
-
-## Crassus Execution
-
-![Running Crassus](screenshots/runtime.png "Running Crassus")
-
-## CSV Output
-
-![CSV Output](screenshots/output.png "CSV Output")
-
-## Output Exports
-
-![Exports](screenshots/exports.png "Exports")
-
-## Export DLL Functions
-
-![DLL Functions](screenshots/exports-version.png "DLL Functions")
 
 # Usage
 
@@ -136,6 +130,24 @@ For applications that unsafely use the `OPENSSLDIR` variable value, a crafted `o
 # Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
 /tmp/calc = asdf
 ```
+
+# Screenshots
+
+## Crassus Execution
+
+![Running Crassus](screenshots/runtime.png "Running Crassus")
+
+## CSV Output
+
+![CSV Output](screenshots/output.png "CSV Output")
+
+## Output Exports
+
+![Exports](screenshots/exports.png "Exports")
+
+## Export DLL Functions
+
+![DLL Functions](screenshots/exports-version.png "DLL Functions")
 
 # Compiling Proxy DLLs
 
