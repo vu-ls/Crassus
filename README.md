@@ -74,7 +74,7 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 
 | Argument                  | Description |
 | ------------------------- | ----------- |
-| `--pml`                   | Location (file) of the existing ProcMon event log file.|
+| `<PMLFILE>`                   | Location (file) of the existing ProcMon event log file.|
 | `--verbose`               | Enable verbose output. |
 | `--debug`                 | Enable debug output. |
 
