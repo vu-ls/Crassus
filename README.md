@@ -12,23 +12,11 @@
 7. Run `Crassus.exe boot.PML`.
 8. Investigate any green colored results and the corresponding entries in `results.csv`.
 
-## Why "Crassus"?
-
-Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus), which finds DLL hijacking opportunities on Windows. Using Spartacus as a starting point, we created Crassus to extend Windows privilege escalation finding capabilities beyond simply looking for missing files. The ACLs used by files and directories of privileged processes can find more than just [looking for missing files](https://vuls.cert.org/confluence/display/Wiki/2021/06/21/Finding+Privilege+Escalation+Vulnerabilities+in+Windows+using+Process+Monitor) to achieve the goal.
-
-## Did you really make yet another privilege escalation discovery tool?
-
-...but with a twist as Crassus is utilizing the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. Typical usage is to generate a boot log using Process Monitor and then parse it with Crassus. It will also automatically generate source code for proxy DLLs with all relevant exports for vulnerable DLLs.
-
-## Features
-
-* Parsing ProcMon PML files natively. The log (PML) parser has been implemented by porting partial functionality to C# from https://github.com/eronnen/procmon-parser/. You can find the format specification [here](https://github.com/eronnen/procmon-parser/tree/master/docs).
-* Crassus will create source code for proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create a `version.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
-* For other events of interest, such as creating a process or loading a library, the ability for unprivileged users to modify the file or any parts of the path to the file is investigated.
-* Able to process large PML files and store all events of interest in an output CSV file. Local benchmark processed a 3GB file with 8 million events in 45 seconds.
-
 # Table of Contents
 
+* [Why "Crassus"](#why-crassus)
+    * [Did you really make yet another privilege escalation discovery tool?](#did-you-really-make-yet-another-privilege-escalation-discovery-tool)
+    * [Features](#features)
 * [Screenshots](#screenshots)
     * [Crassus Execution](#Crassus-execution)
     * [CSV Output](#csv-output)
@@ -52,6 +40,39 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
     * [Code executed with unexpected privileges](#code-executed-with-unexpected-privileges)
 * [Contributions](#contributions)
 * [Credits](#credits)
+
+# Why "Crassus"?
+
+Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus), which finds DLL hijacking opportunities on Windows. Using Spartacus as a starting point, we created Crassus to extend Windows privilege escalation finding capabilities beyond simply looking for missing files. The ACLs used by files and directories of privileged processes can find more than just [looking for missing files](https://vuls.cert.org/confluence/display/Wiki/2021/06/21/Finding+Privilege+Escalation+Vulnerabilities+in+Windows+using+Process+Monitor) to achieve the goal.
+
+## Did you really make yet another privilege escalation discovery tool?
+
+...but with a twist as Crassus is utilizing the [SysInternals Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) and is parsing raw PML log files. Typical usage is to generate a boot log using Process Monitor and then parse it with Crassus. It will also automatically generate source code for proxy DLLs with all relevant exports for vulnerable DLLs.
+
+## Features
+
+* Parsing ProcMon PML files natively. The log (PML) parser has been implemented by porting partial functionality to C# from https://github.com/eronnen/procmon-parser/. You can find the format specification [here](https://github.com/eronnen/procmon-parser/tree/master/docs).
+* Crassus will create source code for proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create a `version.cpp` file for you with all the exports included in it. Then you can insert your payload/execution technique and compile.
+* For other events of interest, such as creating a process or loading a library, the ability for unprivileged users to modify the file or any parts of the path to the file is investigated.
+* Able to process large PML files and store all events of interest in an output CSV file. Local benchmark processed a 3GB file with 8 million events in 45 seconds.
+
+# Screenshots
+
+## Crassus Execution
+
+![Running Crassus](screenshots/runtime.png "Running Crassus")
+
+## CSV Output
+
+![CSV Output](screenshots/output.png "CSV Output")
+
+## Output Exports
+
+![Exports](screenshots/exports.png "Exports")
+
+## Export DLL Functions
+
+![DLL Functions](screenshots/exports-version.png "DLL Functions")
 
 # Usage
 
@@ -133,24 +154,6 @@ For applications that unsafely use the `OPENSSLDIR` variable value, a crafted `o
 # Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
 /tmp/calc = asdf
 ```
-
-# Screenshots
-
-## Crassus Execution
-
-![Running Crassus](screenshots/runtime.png "Running Crassus")
-
-## CSV Output
-
-![CSV Output](screenshots/output.png "CSV Output")
-
-## Output Exports
-
-![Exports](screenshots/exports.png "Exports")
-
-## Export DLL Functions
-
-![DLL Functions](screenshots/exports-version.png "DLL Functions")
 
 # Compiling Proxy DLLs
 
