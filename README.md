@@ -38,6 +38,7 @@
 * [Troubleshooting](#troubleshooting)
     * [Missing files not loaded](#missing-file-not-executed)
     * [Code executed with unexpected privileges](#code-executed-with-unexpected-privileges)
+    * [Findings disappear on reboot](#findings-disappear-on-reboot)
 * [Contributions](#contributions)
 * [Credits](#credits)
 
@@ -244,6 +245,10 @@ If Crassus reports the privileged loading of a file that a user can plant or mod
 ## Code executed with unexpected privileges
 
 Crassus will look for privileged file operations to discover paths of interest. You may encounter a scenario where both a privileged and an unprivileged process access a path, but only the non-privileged process is the one that does the execution of what may be present.
+
+## Findings disappear on reboot
+
+Especially when installing software for the first time, or when installing updates, Process Monitor may log a file operation that looks to be exploitable but does not occur every time that the system boots. Exploiting these operations may be possible on the first reboot after such an event happens. To avoid such edge cases, confirm that subsequent boot logs contain the same reported file operations on subsequent reboots.
 
 
 # Contributions
