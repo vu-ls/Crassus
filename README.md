@@ -47,6 +47,9 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
     * [Acronis True Image](#acronis-true-image)
     * [Atlassian Bitbucket](#atlassian-bitbucket)
     * [McAfee](#mcafee)
+* [Troubleshooting](#troubleshooting)
+    * [Missing files not loaded](#missing-file-not-executed)
+    * [Code executed with unexpected privileges](#code-executed-with-unexpected-privileges)
 * [Contributions](#contributions)
 * [Credits](#credits)
 
@@ -228,6 +231,17 @@ To see why there are two different references to `openssl.cnf` in this boot log,
 ![results.csv for Mcafee](screenshots/mcafee_results.png "results.csv for McAfee")
 
 Note that the loading of the `openssl.cnf` file from the `D:\` path will require further manual investigation, as the feasibility of loading such a path depends on the platform in question, and what access to the system is available. It may be possible to create an optical disk that provides an `openssl.cnf` file that also refers to a path that resolves to the optical drive as well.
+
+# Troubleshooting
+
+## Missing file not executed
+
+If Crassus reports the privileged loading of a file that a user can plant or modify, this doesn't necessarily mean that it's an exploitable scenario. While Crassus looks for **potentially** interesting file types, a Process Monitor log file will not directly indicate what the associated process **would have** done with the file with it if it were there. It could be as simple as extracting a program icon. Investigating the call stack of the file operation in Process Monitor may give a hint as to what would have been done. Or simply place the file and investigate the behavior with a new Process Monitor boot log, if you prefer the easier brute force path.
+
+## Code executed with unexpected privileges
+
+Crassus will look for privileged file operations to discover paths of interest. You may encounter a scenario where both a privileged and an unprivileged process access a path, but only the non-privileged process is the one that does the execution of what may be present.
+
 
 # Contributions
 Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:
