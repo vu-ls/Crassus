@@ -250,16 +250,17 @@ namespace Crassus.Crassus
                         continue;
                     }
 
-                    //Logger.Info("Checking if we can write to: " + MissingFileDir);
+                    Logger.Debug("Checking if we can write to: " + MissingFileDir);
                     if (HasWritePermissionOnPath(MissingFileDir))
                     {
-                        Logger.Success("ACLs should allow placement of missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
-                        isBadItem = true;
-                    }
-                    else if (TryWritingToDir(MissingFileDir))
-                    {
-                        Logger.Success("We should be able to place the missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
-                        isBadItem = true;
+                        if (TryWritingToDir(MissingFileDir))
+                        // We shouldn't have to do this, but some AV software can do weird things where real-world behavior
+                        // doesn't necessarily match up with what the ACLs imply should be possible.
+                        {
+                            Logger.Success("We can place the missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
+                            isBadItem = true;
+                        }
+
                     }
                     else if (!MissingFileDir.StartsWith("c:\\"))
                     {
@@ -272,12 +273,6 @@ namespace Crassus.Crassus
                 }
                 if (isBadItem)
                 {
-                    if (PathName == "c:\\program files (x86)\\acronis\\agent\\aakore.exe" || PathName == "c:\\program files\\acronis\\agent\\aakore.exe")
-                    {
-                        // TODO: Check GrantedPrivileges to confirm that what was granted matches what was asked for
-                        // rather than making this a specific hard-coded Acronis check.
-                        RuntimeData.HasAcronis = true;
-                    }
                     RuntimeData.FoundBad = true;
                     //EventsOfInterest.Remove(item.Key);
                     Logger.Verbose("Potentially exploitable path access: " + item.Key);
@@ -297,10 +292,6 @@ namespace Crassus.Crassus
                     Logger.Debug(String.Format("IdentifySuccessfulEvents() took {0:N0}ms", watch.ElapsedMilliseconds));
                 }
 
-                if (RuntimeData.HasAcronis)
-                {
-                    Logger.Warning("Note that systems that have the Acronis Active Protection Service running will produce false positives.");
-                }
                 if (RuntimeData.ExportsOutputDirectory != "")
                 {
                     if (!Directory.Exists(RuntimeData.ExportsOutputDirectory))
@@ -333,7 +324,8 @@ namespace Crassus.Crassus
             var mySIDs = WindowsIdentity.GetCurrent().Groups;
             var writeAllow = false;
             var writeDeny = false;
-            //Logger.Info(path);
+
+            Logger.Debug("Checking if ACLs would allow writing to: " + path);
 
             System.Security.AccessControl.DirectorySecurity accessControlList;
             try
@@ -405,9 +397,11 @@ namespace Crassus.Crassus
         public static bool TryWritingToDir(string DirName)
         // Attempt to create a file in a specified directory
         {
+            Logger.Debug("Attempting to create a file in: " + DirName);
             bool canWrite = false;
             if (Directory.Exists(DirName))
             {
+                Logger.Debug(DirName + " already exists...");
                 var myUniqueFileName = $@"{Guid.NewGuid()}.txt";
                 string FullPath = Path.Combine(DirName, myUniqueFileName);
                 //Logger.Info("Trying to create: " + FullPath);
@@ -422,6 +416,7 @@ namespace Crassus.Crassus
                     catch (Exception e)
                     {
                         // We're going to leave a file behind here.  Live with it.
+                        Logger.Debug("Failed to delete " + myUniqueFileName);
                     }
                     //Logger.Info("Success!");
                     canWrite = true;
@@ -433,6 +428,7 @@ namespace Crassus.Crassus
             }
             else
             {
+                Logger.Debug("Creating directory: " + DirName);
                 try
                 {
                     Directory.CreateDirectory(DirName);
@@ -449,10 +445,11 @@ namespace Crassus.Crassus
 
         
         private bool TestIfWritable(string pathname)
-        // Try to see if a file path is writable by simply attempting to open it with write permissions
-        // This generally work, except Acronis anti-ransomware software will show that some files are writable
-        // by the current user, when they're actually not.
+        // Try to see if a file path is writable by first simply attempting to open it with write permissions
+        // This generally works, except Acronis anti-ransomware software will show that some files are writable
+        // by the current user, when they're actually not.  So we fall back to actually writing metadata to a file
         {
+            Logger.Debug("Checking to see if " + pathname + " is writable by the current user");
             bool Writable = false;
                 try
                 {
@@ -473,8 +470,13 @@ namespace Crassus.Crassus
                     {
                         FileSecurity fSecurity = File.GetAccessControl(pathname);
                         FileStream writableFile = File.OpenWrite(pathname);
-                        // Logger.Info(pathname + " .canwrite: " + writableFile.CanWrite);
                         writableFile.Close();
+
+                        // The above should be good enough, but some AV software plays games where file ACLs allow
+                        // a file to be opened for writing, but at some level will not allow the modification.
+                        // This should be good enough to test actually writing to file metadata, with the same value.
+                        DateTime lastAccess = File.GetLastAccessTime(pathname);
+                        File.SetLastAccessTime(pathname, lastAccess);
                         Writable = true;
 ;                    }
                     catch
@@ -489,9 +491,8 @@ namespace Crassus.Crassus
         private string FindMutableDirPart(string filePath)
         // For any given path, see if it can be renamed, recursing up to the root
         {
-            //Logger.Info("Getting directory for: " + filePath);
             string dirPart = Path.GetDirectoryName(filePath);
-            //Logger.Info(dirPart);
+            Logger.Debug("Checking if " + dirPart + " can be renamed...");
             try
             {
                 Directory.Move(dirPart, dirPart + "-test");
@@ -516,6 +517,7 @@ namespace Crassus.Crassus
 
             private string LookForFileIfNeeded(string filePath)
         {
+            Logger.Debug("Looking for: " + filePath);
             // When we get a path it may be either x32 or a x64. As Crassus is x64 we can search in the x32 locations if needed.
             if (File.Exists(filePath))
             {
@@ -827,7 +829,7 @@ namespace Crassus.Crassus
                     break;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" && !e.Path.EndsWith("openssl.cnf")) 
+                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf")) 
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
                     // e.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
