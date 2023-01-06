@@ -180,8 +180,15 @@ namespace Crassus.ProcMon
             reader = new BinaryReader(stream, Encoding.Unicode);
 
             Logger.Debug("Reading event log header...");
-            ReadHeader();
-
+            try
+            {
+                ReadHeader();
+            }
+            catch
+            {
+                Logger.Error("Cannot parse PML file!");
+                return;
+            }
             Logger.Debug("Reading event log strings...");
             ReadStrings();
 
