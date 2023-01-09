@@ -82,10 +82,11 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 1. In [Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon), select the `Enable Boot Logging` option. 
 !["Process Monitor Boot Logging option"](screenshots/procmon_boot_log.png)
 2. Reboot.
-3. Once you have logged in and Windows has settled, run Process Monitor once again.
-4. When prompted, save the boot log.
-5. Reset the default Process Monitor filter using `Ctrl-R`.
-6. Save this log file, e.g., to `boot.PML`. The reason for re-saving the log file is twofold:
+3. Once you have logged in and Windows has settled, optionally also run [scheduled tasks that may be configured to run with privileges](https://gist.github.com/wdormann/8afe4edf605627ee4f203861b6cc3a1c).
+4. Run Process Monitor once again.
+5. When prompted, save the boot log.
+6. Reset the default Process Monitor filter using `Ctrl-R`.
+7. Save this log file, e.g., to `boot.PML`. The reason for re-saving the log file is twofold:
     1. Older versions of Process Monitor do not save boot logs as a single file.
     2. Boot logs by default will be unfiltered, which may contain extra noise, such as a local-user DLL hijacking in the launching of of Process Monitor itself.
 
