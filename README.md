@@ -172,7 +172,7 @@ To automate the build process, including specifying whether the library should b
 
 ## MinGW
 
-If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead.
+If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead. On an Ubuntu platform for example, MinGW can be installed via the following: `sudo apt install g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32`
 ```
 # Create a 32-bit DLL
 i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
