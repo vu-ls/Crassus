@@ -242,6 +242,11 @@ To see why there are two different references to `openssl.cnf` in this boot log,
 
 Note that the loading of the `openssl.cnf` file from the `D:\` path will require further manual investigation, as the feasibility of loading such a path depends on the platform in question, and what access to the system is available. It may be possible to create an optical disk that provides an `openssl.cnf` file that also refers to a path that resolves to the optical drive as well.
 
+## Microsoft SQL Server 2022
+
+SQL Server 2022 isn't obviously vulnerable to privilege escalation due to weak ACLs **unless** it is installed to a non-standard location. If it is installed to a location outside of `C:\Program Files`, Crassus will uncover several possibilities for privilege escalation. Most Windows applications that include a privileged component appear to be exploitable in this manner if they are installed to a directory that doesn't already have inherently secure ACLs.
+!["Microsoft SQL Server 2022 installed to an insecure directory"](screenshots/sqlserver2022.png)
+
 # Troubleshooting
 
 ## Missing file not executed
