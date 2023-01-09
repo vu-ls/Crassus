@@ -146,10 +146,9 @@ namespace Crassus.Crassus
                         {
                             string PlantFileName = Path.GetFileName(PathName);
                             WritablePaths.Add(Dir);
+                            Logger.Debug("Adding '" + Dir + "' to the list of writable paths.");
 
                             string LoadedInfo = "";
-                            //if (PathName.EndsWith(".dll"))
-                            //                            string fileExtension = Path.GetExtension(PathName).ToLower();
                             string fileExtension = "";
                             try
                             {
@@ -182,7 +181,7 @@ namespace Crassus.Crassus
                                     LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
                                 }
                             }
-                            if (!RuntimeData.FoundBad)
+                            if (isBadItem)
                             {
                                 Logger.Success("We can rename: " + Dir + " to allow loading of our own " + PlantFileName + LoadedInfo);
                             }
@@ -264,7 +263,6 @@ namespace Crassus.Crassus
                     }
                     else if (!MissingFileDir.StartsWith("c:\\"))
                     {
-                        Logger.Info(MissingFileDir);
                         Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
                         isBadItem = true;
                     }
@@ -492,26 +490,34 @@ namespace Crassus.Crassus
         // For any given path, see if it can be renamed, recursing up to the root
         {
             string dirPart = Path.GetDirectoryName(filePath);
-            Logger.Debug("Checking if " + dirPart + " can be renamed...");
-            try
+            if (dirPart.Length > 3)
             {
-                Directory.Move(dirPart, dirPart + "-test");
-                Directory.Move(dirPart + "-test", dirPart);
-            }
-            catch
-            {
-                if (dirPart.Length > 3)
+
+
+                Logger.Debug("Checking if " + dirPart + " can be renamed...");
+                try
                 {
-                    dirPart = FindMutableDirPart(dirPart);
+                    Directory.Move(dirPart, dirPart + "-test");
+                    Directory.Move(dirPart + "-test", dirPart);
                 }
-                else
+                catch
                 {
-                    //Logger.Info("Setting dirPart to empty string!");
-                    dirPart = "";
+                    if (dirPart.Length > 3)
+                    {
+                        dirPart = FindMutableDirPart(dirPart);
+                    }
+                    else
+                    {
+                        //Logger.Info("Setting dirPart to empty string!");
+                        dirPart = "";
+                    }
                 }
             }
             
-            
+            if (dirPart.Length > 3)
+            {
+                Logger.Debug("We can rename " + dirPart);
+            }
             return dirPart;
         }
 
