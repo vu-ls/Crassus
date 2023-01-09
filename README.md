@@ -165,14 +165,14 @@ Compilation is possible using the `cl.exe` binary included with Visual Studio. S
 cl.exe /LD <target>.cpp
 ```
 
-1. Run the relevant `vcvars` batch file to set up the environment. Specifically, `vcvars64.bat` to compile a 64-bit DLL, or `vcvars32.bat` to compile a 32-bit DLL.
-![Visual Studio 64-bit compilation](screenshots/vs_compile64.png "Visual Studio 64-bit compilation")
-2. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
+To automate the build process, including specifying whether the library should be 64-bit or 32-bit:
+1. Open the Visual Studio Developer Command Prompt.
+2. Build the DLLs with the `build.bat` script.
+3. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
 
 ## MinGW
 
-If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead. But be aware that the .cpp files created by this tool will not cause a DLL with specific exports names and/or ordinals to be created. If you need to create a DLL with exports using MinGW, this can be done through the use of `ADD_EXPORTS` and also `.def` files.
-
+If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead.
 ```
 # Create a 32-bit DLL
 i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
@@ -182,6 +182,11 @@ i686-w64-mingw32-g++ -shared -o curl32.dll curl.o -Wl,--out-implib,main.a
 x86_64-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
 x86_64-w64-mingw32-g++ -shared -o curl64.dll curl.o -Wl,--out-implib,main.a
 ```
+
+To automate the build process, including specifying whether the library should be 64-bit or 32-bit:
+1. Open a terminal.
+2. Run `bash ./build.sh`
+3. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
 
 # Real World Examples
 
