@@ -411,12 +411,12 @@ namespace Crassus.Crassus
                     stream.Close();
                     try
                     {
-                        File.Delete(myUniqueFileName);
+                        File.Delete(FullPath);
                     }
                     catch (Exception e)
                     {
                         // We're going to leave a file behind here.  Live with it.
-                        Logger.Debug("Failed to delete " + myUniqueFileName);
+                        Logger.Debug("Failed to delete " + FullPath);
                     }
                     //Logger.Info("Success!");
                     canWrite = true;
