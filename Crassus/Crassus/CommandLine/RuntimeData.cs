@@ -20,6 +20,10 @@ namespace Crassus.Crassus.CommandLine
 
         public static string ProxyDllTemplate = "";
 
+        public static string ProxyDllTemplateHeader = "";
+
+        public static string ProxyDllTemplateResource = "";
+
         public static bool ProcessExistingLog = true;
 
         public static List<string> TrackExecutables = new List<string>();

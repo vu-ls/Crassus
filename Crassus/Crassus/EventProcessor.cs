@@ -649,6 +649,12 @@ namespace Crassus.Crassus
 
                     List<string> pragma = new List<string>();
                     string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
+                    List<string> functions = new List<string>();
+                    string functionsTemplate = "int ADDCALL {0}() {{Payload();return TRUE;}}";
+                    List<string> headerFunctions = new List<string>();
+                    string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
+                    List<string> resourceFunctions = new List<string>();
+                    string resourceFunctionsTemplate = "{0} @{1}";
                     int steps = exports.Count() / 10;
                     if (steps == 0)
                     {
@@ -657,14 +663,54 @@ namespace Crassus.Crassus
                     int counter = 0;
                     foreach (FileExport f in exports)
                     {
+                        string ExportName = "";
+                        if (f.Name.StartsWith("_"))
+                        {
+                            // a pragma linker line for an export beginning with a `_` must have TWO underscores for the compiled
+                            // binary to have an export with a single `_` prefix with Visual Studio.  Shrug.
+                            ExportName = "_" + f.Name;
+                        }
+                        else
+                        {
+                            ExportName = f.Name;
+                        }
+
                         if (++counter % steps == 0)
                         {
                             Logger.Info(".", false, false);
                         }
-                        pragma.Add(String.Format(pragmaTemplate, f.Name, actualPathNoExtension.Replace("\\", "\\\\"), f.Name, f.Ordinal));
+                        // Visual Studio:
+                        pragma.Add(String.Format(pragmaTemplate, ExportName, actualPathNoExtension.Replace("\\", "\\\\"), ExportName, f.Ordinal));
+                        // MinGW:
+                        if (!ExportName.Contains("?") && !ExportName.Contains("@"))
+                        {
+                            // TODO: Maybe figured out how to handle mangled exports properly
+                            functions.Add(String.Format(functionsTemplate, ExportName));
+                            headerFunctions.Add(String.Format(headerFunctionsTemplate, ExportName));
+                            resourceFunctions.Add(String.Format(resourceFunctionsTemplate, ExportName, f.Ordinal));
+                        }
+
                     }
 
                     string fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", String.Join("\r\n", pragma.ToArray()));
+                    if (item.Value.Process.Is64 == 1)
+                    {
+                        fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_64");
+                    }
+                    else
+                    {
+                        fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_32");
+                    }
+                    fileContents = fileContents.Replace("%_EXPORTS_%", String.Join("\r\n", functions.ToArray()));
+                    string baseName = Path.GetFileNameWithoutExtension(saveAs);
+                    fileContents = fileContents.Replace("%_BASENAME_%", baseName);
+                    baseName = Path.Combine(RuntimeData.ExportsOutputDirectory, baseName);
+                    File.WriteAllText(saveAs, fileContents);
+                    saveAs = baseName + ".h";
+                    fileContents = RuntimeData.ProxyDllTemplateHeader.Replace("%_EXPORTS_%", String.Join("\r\n", headerFunctions.ToArray()));
+                    File.WriteAllText(saveAs, fileContents);
+                    saveAs = baseName + ".def";
+                    fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", String.Join("\r\n", resourceFunctions.ToArray()));
                     File.WriteAllText(saveAs, fileContents);
 
                     Logger.Success(" OK", true, false);
@@ -676,8 +722,30 @@ namespace Crassus.Crassus
                     File.WriteAllText(saveAs, fileContents);
                     saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "calc.cpp");
                     fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
+                    fileContents = fileContents.Replace("%_EXPORTS_%", "");
+                    fileContents = fileContents.Replace("#include \"%_BASENAME_%.h\"", "");
+                    if (item.Value.Process.Is64 == 1)
+                    {
+                        fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_64");
+                    }
+                    else
+                    {
+                        fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_32");
+                    }
                     File.WriteAllText(saveAs, fileContents);
                 }
+            }
+            if (ConfirmedEventsOfInterest.Count > 0)
+            {
+                // Write out helper scripts for compiling proxy DLLs with MinGW and Visual Studio
+                string fileContents = Resources.ResourceManager.GetString("build.sh");
+                // make shell script Linux-friendly
+                fileContents = fileContents.Replace("\r\n", "\n");
+                string saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "build.sh");
+                File.WriteAllText(saveAs, fileContents);
+                fileContents = Resources.ResourceManager.GetString("build.bat");
+                saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "build.bat");
+                File.WriteAllText(saveAs, fileContents);
             }
         }
 

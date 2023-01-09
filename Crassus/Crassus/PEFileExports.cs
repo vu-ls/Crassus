@@ -63,12 +63,6 @@ namespace Crassus.Crassus
 
             for (int i = 0; i < Functions.Length; i++)
             {
-                if (Functions[i].StartsWith("_"))
-                {
-                    // a pragma linker line for an export beginning with a `_` must have TWO underscores for the compiled
-                    // binary to have an export with a single `_` prefix.  Shrug.
-                    Functions[i] = "_" + Functions[i];
-                }
                 exports.Add(new FileExport { Name = Functions[i], Ordinal = Ordinals[i] });
             }
 
