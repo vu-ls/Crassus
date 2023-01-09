@@ -61,8 +61,11 @@ namespace Crassus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to call &quot;%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat&quot; x86
-        ///echo Exit code is: %errorlevel%
+        ///   Looks up a localized string similar to @echo off
+        ///echo %PATH% &gt; path.txt
+        ///FOR %%? IN (path.txt) DO ( SET /A strlength=%%~z? - 2 )
+        ///if %strlength% GEQ 5500 goto vcvarserr
+        ///call &quot;%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat&quot; x86
         ///for /f %%f in (&apos;findstr /m /c:&quot;//BUILD_AS_32&quot; *.cpp&apos;) do (
         ///    cl /LD %%f
         ///)
@@ -70,8 +73,11 @@ namespace Crassus.Properties {
         ///for /f %%f in (&apos;findstr /m /c:&quot;//BUILD_AS_64&quot; *.cpp&apos;) do (
         ///    cl /LD %%f
         ///)
+        ///goto :eof
         ///
-        ///.
+        ///:vcvarserr
+        ///echo This command prompt session has executed vcvarsall.bat too many times!
+        ///echo  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string build_bat {
             get {

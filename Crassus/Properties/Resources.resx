@@ -203,8 +203,11 @@ ls *.cpp | xargs grep -l //BUILD_AS_64 | sed 's/.cpp//' | xargs -n1 -I{} x86_64-
 </value>
   </data>
   <data name="build.bat" xml:space="preserve">
-    <value>call "%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
-echo Exit code is: %errorlevel%
+    <value>@echo off
+echo %PATH% > path.txt
+FOR %%? IN (path.txt) DO ( SET /A strlength=%%~z? - 2 )
+if %strlength% GEQ 5500 goto vcvarserr
+call "%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
 for /f %%f in ('findstr /m /c:"//BUILD_AS_32" *.cpp') do (
     cl /LD %%f
 )
@@ -212,7 +215,11 @@ call "%VCINSTALLDIR%\Auxiliary\Build\vcvars32.bat" amd64
 for /f %%f in ('findstr /m /c:"//BUILD_AS_64" *.cpp') do (
     cl /LD %%f
 )
+goto :eof
 
+:vcvarserr
+echo This command prompt session has executed vcvarsall.bat too many times!
+echo Please close this window and start with a new session.
 </value>
   </data>
 </root>
