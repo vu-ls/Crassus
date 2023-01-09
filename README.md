@@ -35,6 +35,7 @@
     * [Acronis True Image](#acronis-true-image)
     * [Atlassian Bitbucket](#atlassian-bitbucket)
     * [McAfee](#mcafee)
+    * [Microsoft SQL Server 2022](#microsoft-sql-server-2022)
 * [Troubleshooting](#troubleshooting)
     * [Missing files not loaded](#missing-file-not-executed)
     * [Code executed with unexpected privileges](#code-executed-with-unexpected-privileges)
