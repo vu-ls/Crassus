@@ -125,7 +125,7 @@
 
 #include &lt;windows.h&gt;
 #include &lt;string&gt;
-#ifdef __MINGW32__
+#ifdef ADD_EXPORTS
 #include "%_BASENAME_%.h"
 #endif
 
@@ -151,7 +151,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
     }
     return TRUE;
 }
-#ifdef __MINGW32__
+#ifdef ADD_EXPORTS
 %_EXPORTS_%
 #endif
 </value>
