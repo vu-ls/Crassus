@@ -144,6 +144,15 @@ namespace Crassus.ProcMon
                 eventPath = Encoding.ASCII.GetString(reader.ReadBytes(stringSize));
             }
 
+            PMLProcessStruct thisProcess = new PMLProcessStruct();
+            try
+            {
+                thisProcess = LogProcesses[logEvent.indexProcessEvent];
+            }
+            catch
+            {
+                Logger.Debug("Cannot determine process for event: " + logEvent.indexProcessEvent);
+            }
 
             // TODO fix up to be more universal
             return new PMLEvent()
@@ -152,7 +161,7 @@ namespace Crassus.ProcMon
                 Operation = (EventFileSystemOperation)logEvent.OperationType,
                 Result = (EventResult)logEvent.Result,
                 Path = eventPath,
-                Process = LogProcesses[logEvent.indexProcessEvent],
+                Process = thisProcess,
                 OriginalEvent = logEvent,
                 Loaded = true,
                 FoundPath = ""

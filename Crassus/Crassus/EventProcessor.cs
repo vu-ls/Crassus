@@ -35,6 +35,8 @@ namespace Crassus.Crassus
             ".cpl",
             ".so",
             };
+        private List<string> immutableDirParts = new List<string>();
+        private static List<string> pathsWithNoWriteACLs = new List<string>();
 
         public EventProcessor(ProcMonPML log)
         {
@@ -324,76 +326,85 @@ namespace Crassus.Crassus
         public static bool HasWritePermissionOnPath(string path)
         // Loop through the SIDs to see if the current user might be able to write to the specified path
         {
-            var mySID = WindowsIdentity.GetCurrent().User;
-            var mySIDs = WindowsIdentity.GetCurrent().Groups;
             var writeAllow = false;
             var writeDeny = false;
+            if (!pathsWithNoWriteACLs.Contains(path))
+            {
+                var mySID = WindowsIdentity.GetCurrent().User;
+                var mySIDs = WindowsIdentity.GetCurrent().Groups;
 
-            Logger.Debug("Checking if ACLs would allow writing to: " + path);
 
-            System.Security.AccessControl.DirectorySecurity accessControlList;
-            try
-            {
-                accessControlList = Directory.GetAccessControl(path);
-            }
-            catch
-            {
-                Logger.Debug("Failed to get access control list for " + path);
-                return false;
-            }
-            if (accessControlList == null)
-            {
-                Logger.Debug("Empty access control list for " + path);
-                return false;
-            }
-                
-            
-            System.Security.AccessControl.AuthorizationRuleCollection accessRules = null;
-            try
-            {
-                accessRules = accessControlList.GetAccessRules(true, true,
-                                          typeof(System.Security.Principal.SecurityIdentifier));
-            }
-            catch
-            {
-                Logger.Debug("Failed to get access rules for " + path);
-                return false;
-            }
-            
-            if (accessRules == null)
-            {
-                Logger.Debug("Empty access access rules for " + path);
-                return false;
-            }
-                
+                Logger.Debug("Checking if ACLs would allow writing to: " + path);
 
-            mySIDs.Add(mySID);
+                System.Security.AccessControl.DirectorySecurity accessControlList;
+                try
+                {
+                    accessControlList = Directory.GetAccessControl(path);
+                }
+                catch
+                {
+                    Logger.Debug("Failed to get access control list for " + path);
+                    return false;
+                }
+                if (accessControlList == null)
+                {
+                    Logger.Debug("Empty access control list for " + path);
+                    return false;
+                }
 
-            foreach (FileSystemAccessRule rule in accessRules)
-            {
-                if ((FileSystemRights.Write & rule.FileSystemRights) != FileSystemRights.Write)
-                    //Logger.Info("Skipping non-write rule");
-                    continue;
 
-                if (rule.AccessControlType == AccessControlType.Allow)
-                    foreach (var SID in mySIDs)
-                    {
-                        if (mySIDs.Contains(rule.IdentityReference))
+                System.Security.AccessControl.AuthorizationRuleCollection accessRules = null;
+                try
+                {
+                    accessRules = accessControlList.GetAccessRules(true, true,
+                                              typeof(System.Security.Principal.SecurityIdentifier));
+                }
+                catch
+                {
+                    Logger.Debug("Failed to get access rules for " + path);
+                    return false;
+                }
+
+                if (accessRules == null)
+                {
+                    Logger.Debug("Empty access access rules for " + path);
+                    return false;
+                }
+
+
+                mySIDs.Add(mySID);
+
+                foreach (FileSystemAccessRule rule in accessRules)
+                {
+                    if ((FileSystemRights.Write & rule.FileSystemRights) != FileSystemRights.Write)
+                        //Logger.Info("Skipping non-write rule");
+                        continue;
+
+                    if (rule.AccessControlType == AccessControlType.Allow)
+                        foreach (var SID in mySIDs)
                         {
-                            Logger.Debug("SID " + SID + " can write to " + path);
-                            writeAllow = true;
+                            if (mySIDs.Contains(rule.IdentityReference))
+                            {
+                                Logger.Debug("SID " + SID + " can write to " + path);
+                                writeAllow = true;
+                            }
                         }
-                    }
-                else if (rule.AccessControlType == AccessControlType.Deny)
-                    foreach (var SID in mySIDs)
-                    {
-                        if (mySIDs.Contains(rule.IdentityReference))
+                    else if (rule.AccessControlType == AccessControlType.Deny)
+                        foreach (var SID in mySIDs)
                         {
+                            if (mySIDs.Contains(rule.IdentityReference))
+                            {
 
-                            writeDeny = true;
+                                writeDeny = true;
+                            }
                         }
-                    }
+                }
+                if (!writeAllow || writeDeny)
+                {
+                    pathsWithNoWriteACLs.Add(path);
+                }
             }
+
 
             return writeAllow && !writeDeny;
         }
@@ -498,25 +509,33 @@ namespace Crassus.Crassus
             string dirPart = Path.GetDirectoryName(filePath);
             if (dirPart.Length > 3)
             {
-
-
-                Logger.Debug("Checking if " + dirPart + " can be renamed...");
-                try
+                if (!immutableDirParts.Contains(dirPart))
                 {
-                    Directory.Move(dirPart, dirPart + "-test");
-                    Directory.Move(dirPart + "-test", dirPart);
+
+
+                    Logger.Debug("Checking if " + dirPart + " can be renamed...");
+                    try
+                    {
+                        Directory.Move(dirPart, dirPart + "-test");
+                        Directory.Move(dirPart + "-test", dirPart);
+                    }
+                    catch
+                    {
+                        immutableDirParts.Add(dirPart);
+                        if (dirPart.Length > 3)
+                        {
+                            dirPart = FindMutableDirPart(dirPart);
+                        }
+                        else
+                        {
+                            //Logger.Info("Setting dirPart to empty string!");
+                            dirPart = "";
+                        }
+                    }
                 }
-                catch
+                else
                 {
-                    if (dirPart.Length > 3)
-                    {
-                        dirPart = FindMutableDirPart(dirPart);
-                    }
-                    else
-                    {
-                        //Logger.Info("Setting dirPart to empty string!");
-                        dirPart = "";
-                    }
+                    dirPart = FindMutableDirPart(dirPart);
                 }
             }
             else
@@ -663,12 +682,12 @@ namespace Crassus.Crassus
                     //    continue;
                     //}
 
-                    List<string> pragma = new List<string>();
-                    string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
+                    //List<string> pragma = new List<string>();
+                    //string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
                     List<string> functions = new List<string>();
-                    string functionsTemplate = "int ADDCALL {0}() {{Payload();return TRUE;}}";
-                    List<string> headerFunctions = new List<string>();
-                    string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
+                    string functionsTemplate = "void {0}() {{Payload();}}";
+                    //List<string> headerFunctions = new List<string>();
+                    //string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
                     List<string> resourceFunctions = new List<string>();
                     string resourceFunctionsTemplate = "{0} @{1}";
                     int steps = exports.Count() / 10;
@@ -680,35 +699,27 @@ namespace Crassus.Crassus
                     foreach (FileExport f in exports)
                     {
                         string ExportName = "";
-                        if (f.Name.StartsWith("_"))
-                        {
-                            // a pragma linker line for an export beginning with a `_` must have TWO underscores for the compiled
-                            // binary to have an export with a single `_` prefix with Visual Studio.  Shrug.
-                            ExportName = "_" + f.Name;
-                        }
-                        else
-                        {
-                            ExportName = f.Name;
-                        }
+                        ExportName = f.Name;
 
                         if (++counter % steps == 0)
                         {
                             Logger.Info(".", false, false);
                         }
                         // Visual Studio:
-                        pragma.Add(String.Format(pragmaTemplate, ExportName, actualPathNoExtension.Replace("\\", "\\\\"), ExportName, f.Ordinal));
-                        // MinGW:
+ //                       pragma.Add(String.Format(pragmaTemplate, ExportName, actualPathNoExtension.Replace("\\", "\\\\"), ExportName, f.Ordinal));
+                        // MinGW
                         if (!ExportName.Contains("?") && !ExportName.Contains("@"))
                         {
                             // TODO: Maybe figured out how to handle mangled exports properly
                             functions.Add(String.Format(functionsTemplate, ExportName));
-                            headerFunctions.Add(String.Format(headerFunctionsTemplate, ExportName));
+                            //headerFunctions.Add(String.Format(headerFunctionsTemplate, ExportName));
                             resourceFunctions.Add(String.Format(resourceFunctionsTemplate, ExportName, f.Ordinal));
                         }
 
                     }
 
-                    string fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", String.Join("\r\n", pragma.ToArray()));
+                    //                    string fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", String.Join("\r\n", pragma.ToArray()));
+                    string fileContents = RuntimeData.ProxyDllTemplate;
                     if (item.Value.Process.Is64 == 1)
                     {
                         fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_64");
@@ -722,9 +733,9 @@ namespace Crassus.Crassus
                     fileContents = fileContents.Replace("%_BASENAME_%", baseName);
                     baseName = Path.Combine(RuntimeData.ExportsOutputDirectory, baseName);
                     File.WriteAllText(saveAs, fileContents);
-                    saveAs = baseName + ".h";
-                    fileContents = RuntimeData.ProxyDllTemplateHeader.Replace("%_EXPORTS_%", String.Join("\r\n", headerFunctions.ToArray()));
-                    File.WriteAllText(saveAs, fileContents);
+                    //saveAs = baseName + ".h";
+                    //fileContents = RuntimeData.ProxyDllTemplateHeader.Replace("%_EXPORTS_%", String.Join("\r\n", headerFunctions.ToArray()));
+                    //File.WriteAllText(saveAs, fileContents);
                     saveAs = baseName + ".def";
                     fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", String.Join("\r\n", resourceFunctions.ToArray()));
                     File.WriteAllText(saveAs, fileContents);
@@ -737,7 +748,7 @@ namespace Crassus.Crassus
                     string fileContents = Resources.ResourceManager.GetString("openssl.cnf");
                     File.WriteAllText(saveAs, fileContents);
                     saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "calc.cpp");
-                    fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
+//                    fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
                     fileContents = fileContents.Replace("%_EXPORTS_%", "");
                     fileContents = fileContents.Replace("#include \"%_BASENAME_%.h\"", "");
                     if (item.Value.Process.Is64 == 1)
@@ -911,6 +922,11 @@ namespace Crassus.Crassus
                 if (!e.Loaded)
                 {
                     break;
+                }
+
+                if (e.Process.ProcessName == "" || e.Path == "")
+                {
+                    continue;
                 }
 
                 if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf")) 

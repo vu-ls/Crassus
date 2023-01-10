@@ -275,7 +275,6 @@ namespace Crassus.Crassus.CommandLine
                 RuntimeData.ProxyDllTemplate = Resources.ResourceManager.GetString("proxy.dll.cpp");
             }
 
-            RuntimeData.ProxyDllTemplateHeader = Resources.ResourceManager.GetString("proxy.dll.h");
             RuntimeData.ProxyDllTemplateResource = Resources.ResourceManager.GetString("proxy.dll.def");
 
             // Argument combination validation.
