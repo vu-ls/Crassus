@@ -89,7 +89,7 @@ Crassus was developed as a Visual Studio 2019 project. To build `Crassus.exe`:
 
 ## Using precompiled Crassus.exe
 
-If you trust running other people's code without knowing what it does, `Crassus.exe` is provided in this repository [LINK].
+If you trust running other people's code without knowing what it does, `Crassus.exe` is [provided in this repository](./binaries/Crassus.exe).
 
 # Usage
 
