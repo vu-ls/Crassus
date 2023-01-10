@@ -628,6 +628,7 @@ namespace Crassus.Crassus
                     string saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, Path.GetFileNameWithoutExtension(item.Value.Path) + ".cpp");
 
                     string actualLocation = "";
+                    bool notFound = false;
                     if (item.Value.FoundPath == "")
                     {
                         string fileName = Path.GetFileName(item.Value.Path);
@@ -638,8 +639,8 @@ namespace Crassus.Crassus
                         }
                         else
                         {
-                            //Logger.Warning(" - No DLL Found", true, false);
-//                            continue;
+                            Logger.Warning(" - No DLL Found", true, false);
+                            notFound = true;
                         }
                     }
                     else
@@ -740,7 +741,10 @@ namespace Crassus.Crassus
                     fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", String.Join("\r\n", resourceFunctions.ToArray()));
                     File.WriteAllText(saveAs, fileContents);
 
-                    Logger.Success(" OK", true, false);
+                    if (!notFound)
+                    {
+                        Logger.Success(" OK", true, false);
+                    }                 
                 }
                 else if (fileExtension == ".cnf")
                 {
