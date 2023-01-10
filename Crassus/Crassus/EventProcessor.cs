@@ -101,6 +101,7 @@ namespace Crassus.Crassus
             {
                 bool is64bit;
                 bool isBadItem = false;
+                bool fileLocked = false;
                 if (item.Value.Process.Is64 == 1)
                 {
                     is64bit = true;
@@ -134,6 +135,7 @@ namespace Crassus.Crassus
                         {
                             Logger.Warning("ACLs should allow writing to " + PathName + ", but we cannot. In use maybe?");
                             isBadItem = true;
+                            fileLocked = true;
                         }
                     }
 
@@ -181,9 +183,13 @@ namespace Crassus.Crassus
                                     LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
                                 }
                             }
-                            if (isBadItem)
+                            if (isBadItem && fileLocked)
                             {
                                 Logger.Success("We can rename: " + Dir + " to allow loading of our own " + PlantFileName + LoadedInfo);
+                            }
+                            else
+                            {
+                                Logger.Success("We can also rename: " + Dir + " to allow loading of our own " + PlantFileName + LoadedInfo);
                             }
                             
                             isBadItem = true;
@@ -512,6 +518,10 @@ namespace Crassus.Crassus
                         dirPart = "";
                     }
                 }
+            }
+            else
+            {
+                dirPart = "";
             }
             
             if (dirPart.Length > 3)
