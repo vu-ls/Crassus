@@ -67,12 +67,11 @@ namespace Crassus.Properties {
         ///if %strlength% GEQ 5500 goto vcvarserr
         ///call &quot;%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat&quot; x86
         ///for /f %%f in (&apos;findstr /m /c:&quot;//BUILD_AS_32&quot; *.cpp&apos;) do (
-        ///    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+        ///    cl /DADD_EXPORTS /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+        ///    if not exist %%~nf.dll cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link
         ///)
         ///call &quot;%VCINSTALLDIR%\Auxiliary\Build\vcvars32.bat&quot; amd64
-        ///for /f %%f in (&apos;findstr /m /c:&quot;//BUILD_AS_64&quot; *.cpp&apos;) do (
-        ///    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
-        ///)        /// [rest of string was truncated]&quot;;.
+        ///for /f %%f in (&apos;findstr /m /c:&quot;//BUILD_A [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string build_bat {
             get {

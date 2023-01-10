@@ -147,9 +147,12 @@ extern "C" {
       }
       return TRUE;
   }
-}
 
-%_EXPORTS_%
+
+  #ifdef ADD_EXPORTS
+  %_EXPORTS_%
+  #endif
+}
 
 </value>
   </data>
@@ -178,11 +181,13 @@ FOR %%? IN (path.txt) DO ( SET /A strlength=%%~z? - 2 )
 if %strlength% GEQ 5500 goto vcvarserr
 call "%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
 for /f %%f in ('findstr /m /c:"//BUILD_AS_32" *.cpp') do (
-    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+    cl /DADD_EXPORTS /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+    if not exist %%~nf.dll cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link
 )
 call "%VCINSTALLDIR%\Auxiliary\Build\vcvars32.bat" amd64
 for /f %%f in ('findstr /m /c:"//BUILD_AS_64" *.cpp') do (
-    cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+    cl /DADD_EXPORTS /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link /DEF:%%~nf.def
+    if not exist %%~nf.dll cl /D_USRDLL /D_WINDLL %%f /LD /Fe%%~nf.dll /link
 )
 goto :eof
 
