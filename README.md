@@ -22,6 +22,9 @@
     * [CSV Output](#csv-output)
     * [Exports](#output-exports)
     * [Export DLL Functions](#export-dll-functions)
+* [Getting Crassus.exe](#getting-crassusexe)
+    * [Building with Visual studio](#building-with-visual-studio)
+    * [Using precompiled Crassus.exe](#using-precompiled-crassusexe)
 * [Usage](#usage)
     * [Execution Flow](#execution-flow)
     * [Command Line Arguments](#command-line-arguments)
@@ -75,6 +78,18 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 ## Export DLL Functions
 
 ![DLL Functions](screenshots/exports-version.png "DLL Functions")
+
+# Getting Crassus.exe
+
+## Building with Visual Studio
+
+Crassus was developed as a Visual Studio 2019 project. To build `Crassus.exe`:
+1. Open `Crassus.sln`
+2. Press `Ctrl+Shift+B` on your keyboard
+
+## Using precompiled Crassus.exe
+
+If you trust running other people's code without knowing what it does, `Crassus.exe` is provided in this repository [LINK].
 
 # Usage
 
