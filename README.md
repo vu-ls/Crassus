@@ -22,6 +22,7 @@
     * [CSV Output](#csv-output)
     * [Exports](#output-exports)
     * [Export DLL Functions](#export-dll-functions)
+    * [Export DLL Ordinals](#export-dll-ordinals)
 * [Getting Crassus.exe](#getting-crassusexe)
     * [Building with Visual studio](#building-with-visual-studio)
     * [Using precompiled Crassus.exe](#using-precompiled-crassusexe)
@@ -78,6 +79,10 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 ## Export DLL Functions
 
 ![DLL Functions](screenshots/exports-version.png "DLL Functions")
+
+## Export DLL Ordinals
+
+![DLL Ordinals](screenshots/exports-def.png "DLL Ordinals")
 
 # Getting Crassus.exe
 

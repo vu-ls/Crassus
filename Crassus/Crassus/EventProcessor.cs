@@ -686,7 +686,7 @@ namespace Crassus.Crassus
                     //List<string> pragma = new List<string>();
                     //string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
                     List<string> functions = new List<string>();
-                    string functionsTemplate = "void {0}() {{Payload();}}";
+                    string functionsTemplate = "  void {0}() {{Payload();}}";
                     //List<string> headerFunctions = new List<string>();
                     //string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
                     List<string> resourceFunctions = new List<string>();
@@ -949,7 +949,7 @@ namespace Crassus.Crassus
                     if ( e.Operation == EventFileSystemOperation.Process_Create)
                     {
                         // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
-                        if (e.Path.ToLower().Contains("\\microsoftedgeupdate.exe"))
+                        if (e.Path.ToLower().EndsWith("\\microsoftedgeupdate.exe"))
                         {
                             // This seems to just be noise
                             continue;
@@ -987,6 +987,11 @@ namespace Crassus.Crassus
                     else if (e.Result != EventResult.NAME_NOT_FOUND && e.Result != EventResult.PATH_NOT_FOUND)
                     {
                         // We've already got Load_image and Process_Create events. We don't care about existing files
+                        continue;
+                    }
+                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe"))
+                    {
+                        // More noise, apparently.
                         continue;
                     }
                     // By now, we are dealing with the legacy Crassus behavior: Looking for "interesting" things that are missing.
