@@ -31,7 +31,6 @@ namespace Crassus.Crassus
             ".drv",
             ".cpl",
             ".so",
-            ".exe",
             ".acm",
             ".ppi",
             };
