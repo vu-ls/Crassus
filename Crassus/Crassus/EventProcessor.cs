@@ -31,6 +31,9 @@ namespace Crassus.Crassus
             ".drv",
             ".cpl",
             ".so",
+            ".exe",
+            ".acm",
+            ".ppi",
             };
         private List<string> immutableDirParts = new List<string>();
         private static List<string> pathsWithNoWriteACLs = new List<string>();
