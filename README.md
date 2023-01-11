@@ -136,7 +136,7 @@ If the real DLL cannot be found using the Process Monitor log, or if the export 
 
 
 ```cpp
->#pragma once
+#pragma once
     
 //%_BUILD_AS%
 
