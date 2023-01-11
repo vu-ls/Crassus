@@ -198,6 +198,8 @@ To automate the build process, including specifying whether the library should b
 2. Build the DLLs with the `build.bat` script.
 3. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
 
+**Note** Due to an unfortunate behavior with `vcvarsall.bat`, which is [definitely not a bug](https://developercommunity.visualstudio.com/t/vcvarsallbat-reports-the-input-line-is-too-long-if/257260#T-N258712), you may encounter trouble attempting to run `build.bat` more than once in the same Visual Studio Developer Command Prompt session. If you encounter an error, simply close the window and launch it again.
+
 ## MinGW
 
 If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead. On an Ubuntu platform for example, MinGW can be installed via the following: `sudo apt install g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32`
