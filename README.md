@@ -130,7 +130,7 @@ C:\tmp> Crassus.exe boot.PML
 
 ## Proxy DLL Template
 
-Below is the template that is used when generating proxy DLLs., For DLLs that are found by Crassus, the proxy DLL will contain the same export names, as well as the same ordinals as specified in the `.def` file.
+Below is the template that is used when generating proxy DLLs., For DLLs that are found by Crassus, the proxy DLL will contain the same export names as specified in `%_EXPORTS_%`, as well as the same ordinals as specified in the `.def` file. Crassus will detect whether the DLL needs to be built as a 32-bit library or a 64-bit library by looking at the architecture of the parent process, and tagging the source code in the `%_BUILD_AS_%` field accordingly.
 
 If the real DLL cannot be found using the Process Monitor log, or if the export name is problematic, the build scripts will fall back to creating a DLL without specified exports.
 
