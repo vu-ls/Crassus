@@ -6,13 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using static Crassus.ProcMon.ProcMonConstants;
 using static Crassus.Crassus.PEFileExports;
-using System.Runtime.InteropServices;
 
 namespace Crassus.Crassus
 {
