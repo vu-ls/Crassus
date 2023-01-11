@@ -190,7 +190,7 @@ For applications that unsafely use the `OPENSSLDIR` variable value, a crafted `o
 
 Compilation is possible using the `cl.exe` binary included with Visual Studio. Specifically:
 ```
-cl.exe /LD <target>.cpp
+cl.exe /DADD_EXPORTS /D_USRDLL /D_WINDLL <target>.cpp /LD /Fe<target>.dll /link /DEF:<target>.def
 ```
 
 To automate the build process, including specifying whether the library should be 64-bit or 32-bit:
@@ -203,12 +203,12 @@ To automate the build process, including specifying whether the library should b
 If Visual Studio isn't readily available, proxy DLLs can be compiled with [MinGW-w64](https://www.mingw-w64.org/) instead. On an Ubuntu platform for example, MinGW can be installed via the following: `sudo apt install g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32`
 ```
 # Create a 32-bit DLL
-i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
-i686-w64-mingw32-g++ -shared -o curl32.dll curl.o -Wl,--out-implib,main.a
+i686-w64-mingw32-g++ -c -o curl.o curl.cpp -D ADD_EXPORTS
+i686-w64-mingw32-g++ -o curl.dll curl.o curl.def -s -shared -Wl,--subsystem,windows
 
 # Create a 64-bit DLL
-x86_64-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL curl.cpp
-x86_64-w64-mingw32-g++ -shared -o curl64.dll curl.o -Wl,--out-implib,main.a
+x86_64-w64-mingw32-g++ -c -o curl.o curl.cpp -D ADD_EXPORTS
+x86_64-w64-mingw32-g++ -o curl.dll curl.o curl.def -s -shared -Wl,--subsystem,windows
 ```
 
 To automate the build process, including specifying whether the library should be 64-bit or 32-bit:
