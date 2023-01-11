@@ -198,7 +198,7 @@ To automate the build process, including specifying whether the library should b
 2. Build the DLLs with the `build.bat` script.
 3. Rename the compiled file as necessary if the vulnerable file name ends with something other than `.dll`.
 
-**Note** Due to an unfortunate behavior with `vcvarsall.bat`, which is [definitely not a bug](https://developercommunity.visualstudio.com/t/vcvarsallbat-reports-the-input-line-is-too-long-if/257260#T-N258712), you may encounter trouble attempting to run `build.bat` more than once in the same Visual Studio Developer Command Prompt session. If you encounter an error, simply close the window and launch it again.
+**Note:** Due to an unfortunate behavior with `vcvarsall.bat`, which is [definitely not a bug](https://developercommunity.visualstudio.com/t/vcvarsallbat-reports-the-input-line-is-too-long-if/257260#T-N258712), you may encounter trouble attempting to run `build.bat` more than once in the same Visual Studio Developer Command Prompt session. If you encounter an error, simply close the window and launch it again.
 
 ## MinGW
 
