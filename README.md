@@ -251,6 +251,7 @@ Crassus finds many ways to achieve privilege escalation with this software, incl
 * Placement of missing DLLs in user-writable locations.
 * Placement of missing EXEs in user-writable locations.
 * Renaming the directory of a privileged EXE to allow user placement of an EXE of the same name.
+
 ![Crassus output for Atlassian Bitbucket](screenshots/bitbucket.png "Crassus output for Atlassian Bitbucket")
 
 ### EXE Hijacking
