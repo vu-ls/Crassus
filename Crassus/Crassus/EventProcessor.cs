@@ -685,7 +685,7 @@ namespace Crassus.Crassus
                     //List<string> pragma = new List<string>();
                     //string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
                     List<string> functions = new List<string>();
-                    string functionsTemplate = "  void {0}() {{Payload();}}";
+                    string functionsTemplate = "  void {0}() {{}}";
                     //List<string> headerFunctions = new List<string>();
                     //string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
                     List<string> resourceFunctions = new List<string>();
