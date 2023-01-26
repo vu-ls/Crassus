@@ -285,7 +285,7 @@ If Crassus reports the privileged loading of a file that a user can plant or mod
 
 ## Code executed with unexpected privileges
 
-Crassus will look for privileged file operations to discover paths of interest. You may encounter a scenario where both a privileged and an unprivileged process access a path, but only the non-privileged process is the one that does the execution of what may be present.
+Crassus will look for privileged file operations to discover paths of interest. You may encounter a scenario where both a privileged and an unprivileged process access a path, but only the non-privileged process is the one that does the execution of what may be present. Alternatively, you may encounter a scenario where a parent process does run with privileges, but it may explicitly spawn child processes with lower privileges.
 
 ## Findings disappear on reboot
 
