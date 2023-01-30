@@ -23,7 +23,7 @@ namespace Crassus.Crassus
         // For missing files that are attempted to be opened, anything in this list will be marked as notable.
         // If we reported all missing files, the false-positive rate would go through the roof.
         // TODO: Maybe there's a comprehensive list of likely to be LoadLibrary'd file extensions
-            { 
+            {
             ".dll",
             ".sys",
             ".xll",
@@ -48,7 +48,7 @@ namespace Crassus.Crassus
             Stopwatch watch = Stopwatch.StartNew();
 
             FindEvents();
-            
+
             watch.Stop();
             if (RuntimeData.Debug)
             {
@@ -115,7 +115,7 @@ namespace Crassus.Crassus
 
                 if (File.Exists(PathName))
                 {
-                    // Logger.Info(PathName);
+                    Logger.Debug("Found path: " + PathName);
                     if (item.Value.EventClass != EventClassType.Process && !item.Value.Path.EndsWith("openssl.cnf") && item.Value.Result != EventResult.NAME_NOT_FOUND)
                     {
                         // This is an access to an existing file that was also existing on boot, so let's not be bothered by non process (load library, start process) events
@@ -184,15 +184,18 @@ namespace Crassus.Crassus
                                     LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
                                 }
                             }
-                            if (isBadItem && fileLocked)
+                            if ((isBadItem && fileLocked) || (!isBadItem && !fileLocked))
                             {
-                                Logger.Success("We can rename: " + Dir + " to allow loading of our own " + PlantFileName + LoadedInfo);
+                                // First case is that we have a user-writable file, but is locked
+                                // Second case is that file ACLs are OK, but it's in a renamable directory
+                                Logger.Success("We can rename: " + Dir + " to allow loading of our own " + PathName + LoadedInfo);
                             }
                             else
                             {
-                                Logger.Success("We can also rename: " + Dir + " to allow loading of our own " + PlantFileName + LoadedInfo);
+                                // We've already reported a success, so we use "also"
+                                Logger.Success("We can also rename: " + Dir + " to allow loading of our own " + PathName + LoadedInfo);
                             }
-                            
+
                             isBadItem = true;
                         }
                     }
@@ -201,7 +204,7 @@ namespace Crassus.Crassus
                 }
                 else
                 {
-                    //Logger.Info("Missing path: " + PathName);
+                    Logger.Debug("Missing path: " + PathName);
                     // Must be a missing file. We don't know for sure what the program would do with the file, but we can guess.
                     // If it's a DLL, it's *probably* to load it, but that's just a guess.
                     // Let's check the directory ACLs.
@@ -252,12 +255,25 @@ namespace Crassus.Crassus
                     }
                     catch
                     {
-                        //Logger.Error(PathName);
+                        Logger.Debug("Error parsing " + PathName);
                         continue;
                     }
 
                     Logger.Debug("Checking if we can write to: " + MissingFileDir);
-                    if (HasWritePermissionOnPath(MissingFileDir))
+                    if (!Directory.Exists(MissingFileDir))
+                    {
+                        Logger.Debug(MissingFileDir + "doesn't even exist!");
+                        try
+                        {
+                            Directory.CreateDirectory(MissingFileDir);
+                            Logger.Success("We can create the missing " + MissingFileDir + " directory to place " + MissingFile + LoadedInfo);
+                        }
+                        catch
+                        {
+                            // Carry on...
+                        }
+                    }
+                    else if (HasWritePermissionOnPath(MissingFileDir))
                     {
                         if (TryWritingToDir(MissingFileDir))
                         // We shouldn't have to do this, but some AV software can do weird things where real-world behavior
@@ -273,7 +289,7 @@ namespace Crassus.Crassus
                         Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
                         isBadItem = true;
                     }
-                    
+
 
                 }
                 if (isBadItem)
@@ -283,7 +299,7 @@ namespace Crassus.Crassus
                     Logger.Verbose("Potentially exploitable path access: " + item.Key);
                     ConfirmedEventsOfInterest.Add(item.Key, item.Value);
                 }
-                
+
             }
 
             if (!RuntimeData.FoundBad)
@@ -308,7 +324,8 @@ namespace Crassus.Crassus
                 try
                 {
                     SaveEventsOfInterest();
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     Logger.Error(e.Message);
                     Logger.Warning("There was an error saving the output. In order to avoid losing the processed data");
@@ -457,7 +474,7 @@ namespace Crassus.Crassus
 
         }
 
-        
+
         private bool TestIfWritable(string pathname)
         // Try to see if a file path is writable by first simply attempting to open it with write permissions
         // This generally works, except Acronis anti-ransomware software will show that some files are writable
@@ -465,39 +482,40 @@ namespace Crassus.Crassus
         {
             Logger.Debug("Checking to see if " + pathname + " is writable by the current user");
             bool Writable = false;
+            try
+            {
+                // Check if a path is a directory, by checking its attributes
+                FileAttributes attr = File.GetAttributes(pathname);
+                if (attr.HasFlag(FileAttributes.Directory))
+                {
+                    //Logger.Info(pathname + " is a directory!");
+                }
+            }
+            catch
+            {
+                // If we can't get a path's attributes, then there's not much we can do.
+            }
+            if (File.Exists(pathname))
+            {
                 try
                 {
-                    // Check if a path is a directory, by checking its attributes
-                    FileAttributes attr = File.GetAttributes(pathname);
-                    if (attr.HasFlag(FileAttributes.Directory))
-                    {
-                        //Logger.Info(pathname + " is a directory!");
-                    }
+                    FileSecurity fSecurity = File.GetAccessControl(pathname);
+                    FileStream writableFile = File.OpenWrite(pathname);
+                    writableFile.Close();
+
+                    // The above should be good enough, but some AV software plays games where file ACLs allow
+                    // a file to be opened for writing, but at some level will not allow the modification.
+                    // This should be good enough to test actually writing to file metadata, with the same value.
+                    DateTime lastAccess = File.GetLastAccessTime(pathname);
+                    File.SetLastAccessTime(pathname, lastAccess);
+                    Writable = true;
+                    ;
                 }
                 catch
                 {
-                    // If we can't get a path's attributes, then there's not much we can do.
+                    // Attempting to open a file with write permissions will throw an error if you won't be able to write to it.
                 }
-                if (File.Exists(pathname))
-                {
-                    try
-                    {
-                        FileSecurity fSecurity = File.GetAccessControl(pathname);
-                        FileStream writableFile = File.OpenWrite(pathname);
-                        writableFile.Close();
-
-                        // The above should be good enough, but some AV software plays games where file ACLs allow
-                        // a file to be opened for writing, but at some level will not allow the modification.
-                        // This should be good enough to test actually writing to file metadata, with the same value.
-                        DateTime lastAccess = File.GetLastAccessTime(pathname);
-                        File.SetLastAccessTime(pathname, lastAccess);
-                        Writable = true;
-;                    }
-                    catch
-                    {
-                        // Attempting to open a file with write permissions will throw an error if you won't be able to write to it.
-                    }
-                }
+            }
 
             return Writable;
         }
@@ -541,7 +559,7 @@ namespace Crassus.Crassus
             {
                 dirPart = "";
             }
-            
+
             if (dirPart.Length > 3)
             {
                 Logger.Debug("We can rename " + dirPart);
@@ -549,7 +567,7 @@ namespace Crassus.Crassus
             return dirPart;
         }
 
-            private string LookForFileIfNeeded(string filePath)
+        private string LookForFileIfNeeded(string filePath)
         {
             Logger.Debug("Looking for: " + filePath);
             // When we get a path it may be either x32 or a x64. As Crassus is x64 we can search in the x32 locations if needed.
@@ -560,7 +578,7 @@ namespace Crassus.Crassus
 
             // There should really be a case-insensitive replace.
             if (filePath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.System), StringComparison.OrdinalIgnoreCase))
-            {   
+            {
                 return Environment.GetFolderPath(Environment.SpecialFolder.SystemX86) + filePath.Remove(0, Environment.GetFolderPath(Environment.SpecialFolder.System).Length);
             }
             else if (filePath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), StringComparison.OrdinalIgnoreCase))
@@ -634,7 +652,7 @@ namespace Crassus.Crassus
                         string fileMatch = null;
                         if (fileMatch != null)
                         {
-                                actualLocation = fileMatch;
+                            actualLocation = fileMatch;
                         }
                         else
                         {
@@ -651,8 +669,8 @@ namespace Crassus.Crassus
                     if (!File.Exists(actualLocation))
                     {
                         //File.Create(saveAs + "-file-not-found").Dispose();
-                       // Logger.Warning(" - No DLL Found", true, false);
-//                        continue;
+                        // Logger.Warning(" - No DLL Found", true, false);
+                        //                        continue;
                     }
 
                     string actualPathNoExtension = "";
@@ -662,15 +680,16 @@ namespace Crassus.Crassus
                     }
                     else
                     {
-                       
+
                     }
-                    
+
 
                     List<FileExport> exports = new List<FileExport>();
                     try
                     {
                         exports = ExportLoader.Extract(actualLocation);
-                    } catch (Exception e)
+                    }
+                    catch (Exception e)
                     {
                         // Nothing.
                     }
@@ -706,7 +725,7 @@ namespace Crassus.Crassus
                             Logger.Info(".", false, false);
                         }
                         // Visual Studio:
- //                       pragma.Add(String.Format(pragmaTemplate, ExportName, actualPathNoExtension.Replace("\\", "\\\\"), ExportName, f.Ordinal));
+                        //                       pragma.Add(String.Format(pragmaTemplate, ExportName, actualPathNoExtension.Replace("\\", "\\\\"), ExportName, f.Ordinal));
                         // MinGW
                         if (!ExportName.Contains("?") && !ExportName.Contains("@"))
                         {
@@ -743,7 +762,7 @@ namespace Crassus.Crassus
                     if (!notFound)
                     {
                         Logger.Success(" OK", true, false);
-                    }                 
+                    }
                 }
                 else if (fileExtension == ".cnf")
                 {
@@ -751,7 +770,7 @@ namespace Crassus.Crassus
                     string fileContents = Resources.ResourceManager.GetString("openssl.cnf");
                     File.WriteAllText(saveAs, fileContents);
                     saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "calc.cpp");
-//                    fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
+                    //                    fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
                     fileContents = fileContents.Replace("%_EXPORTS_%", "");
                     fileContents = fileContents.Replace("#include \"%_BASENAME_%.h\"", "");
                     if (item.Value.Process.Is64 == 1)
@@ -932,7 +951,7 @@ namespace Crassus.Crassus
                     continue;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf")) 
+                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf"))
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
                     // e.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
@@ -945,7 +964,7 @@ namespace Crassus.Crassus
                     ProcessEvent = true;
                     // Yes, Process_Create and Load_image aren't really FileSystem operations.  But Spartacus wasn't originally designed
                     // with the concept of looking anything other than FileSystem oeprations, so...
-                    if ( e.Operation == EventFileSystemOperation.Process_Create)
+                    if (e.Operation == EventFileSystemOperation.Process_Create)
                     {
                         // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
                         if (e.Path.ToLower().EndsWith("\\microsoftedgeupdate.exe"))
@@ -1008,7 +1027,7 @@ namespace Crassus.Crassus
                     {
                         continue;
                     }
-                }          
+                }
                 else // Not a File_System event
                 {
                     // Must be something other than FileSystem or Process events.  We don't care.
@@ -1046,7 +1065,7 @@ namespace Crassus.Crassus
                 EventsOfInterest.Add(p, e);
                 Logger.Debug(p);
             } while (true);
-            Console.WriteLine("");           
+            Console.WriteLine("");
             Logger.Info("Found " + String.Format("{0:N0}", EventsOfInterest.Count()) + " privileged events of interest...");
         }
     }
