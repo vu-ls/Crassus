@@ -267,6 +267,7 @@ namespace Crassus.Crassus
                         {
                             Directory.CreateDirectory(MissingFileDir);
                             Logger.Success("We can create the missing " + MissingFileDir + " directory to place " + MissingFile + LoadedInfo);
+                            isBadItem = true;
                         }
                         catch
                         {
@@ -770,6 +771,7 @@ namespace Crassus.Crassus
                     string fileContents = Resources.ResourceManager.GetString("openssl.cnf");
                     File.WriteAllText(saveAs, fileContents);
                     saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "calc.cpp");
+                    fileContents = RuntimeData.ProxyDllTemplate;
                     //                    fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", "\r\n");
                     fileContents = fileContents.Replace("%_EXPORTS_%", "");
                     fileContents = fileContents.Replace("#include \"%_BASENAME_%.h\"", "");
@@ -781,6 +783,9 @@ namespace Crassus.Crassus
                     {
                         fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_32");
                     }
+                    File.WriteAllText(saveAs, fileContents);
+                    saveAs = Path.Combine(RuntimeData.ExportsOutputDirectory, "calc.def");
+                    fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", "");
                     File.WriteAllText(saveAs, fileContents);
                 }
             }
