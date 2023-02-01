@@ -121,13 +121,48 @@ namespace Crassus.Crassus
                         // This is an access to an existing file that was also existing on boot, so let's not be bothered by non process (load library, start process) events
                         continue;
                     }
+
+                    string LoadedInfo = "";
+                    string fileExtension = "";
+                    try
+                    {
+                        fileExtension = Path.GetExtension(PathName.ToLower());
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    if (libraryExtensionList.Contains(fileExtension))
+                    {
+                        // If it's a DLL, then we should share if it's a 64-bit or a 32-bit process attempting to load the file.
+                        if (is64bit)
+                        {
+                            LoadedInfo = " (64-bit, " + item.Value.Process.Integrity + " Integrity)";
+                        }
+                        else
+                        {
+                            LoadedInfo = " (32-bit, " + item.Value.Process.Integrity + " Integrity)";
+                        }
+                    }
+                    else
+                    {
+                        if (is64bit)
+                        {
+                            LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
+                        }
+                        else
+                        {
+                            LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
+                        }
+                    }
+
                     // This is a library or EXE that was actually loaded.
                     // Let's check the privileges of the file and directory to make sure that they're sane.
                     bool Writable = TestIfWritable(PathName);
                     if (Writable && !WritablePaths.Contains(PathName))
                     {
                         WritablePaths.Add(PathName);
-                        Logger.Success("We can write to: " + PathName);
+                        Logger.Success("We can write to: " + PathName + LoadedInfo);
                         isBadItem = true;
                     }
                     else
@@ -151,43 +186,8 @@ namespace Crassus.Crassus
                             WritablePaths.Add(Dir);
                             Logger.Debug("Adding '" + Dir + "' to the list of writable paths.");
 
-                            string LoadedInfo = "";
-                            string fileExtension = "";
-                            try
-                            {
-                                fileExtension = Path.GetExtension(PathName.ToLower());
-                            }
-                            catch
-                            {
-                                continue;
-                            }
-                            if (libraryExtensionList.Contains(fileExtension))
-                            {
-                                // If it's a DLL, then we should share if it's a 64-bit or a 32-bit process attempting to load the file.
-                                if (is64bit)
-                                {
-                                    LoadedInfo = " (64-bit, " + item.Value.Process.Integrity + " Integrity)";
-                                }
-                                else
-                                {
-                                    LoadedInfo = " (32-bit, " + item.Value.Process.Integrity + " Integrity)";
-                                }
-                            }
-                            else
-                            {
-                                if (is64bit)
-                                {
-                                    LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
-                                }
-                                else
-                                {
-                                    LoadedInfo = " (" + item.Value.Process.Integrity + " Integrity)";
-                                }
-                            }
                             if ((isBadItem && fileLocked) || (!isBadItem && !fileLocked))
                             {
-                                // First case is that we have a user-writable file, but is locked
-                                // Second case is that file ACLs are OK, but it's in a renamable directory
                                 Logger.Success("We can rename: " + Dir + " to allow loading of our own " + PathName + LoadedInfo);
                             }
                             else
