@@ -1049,6 +1049,12 @@ namespace Crassus.Crassus
 
                 p = e.Path.ToLower();
 
+                if (e.Process.ProcessName == "svchost.exe" && p.StartsWith("c:\\systemroot\\") && p.EndsWith(".sys"))
+                {
+                    // This is an odd one for sure, but doesn't look to be exploitable
+                    continue;
+                }
+
                 if (p.Contains("local\\microsoft\\onedrive\\"))
                 {
                     // Windows does things with OneDrive that look to be exploitable, but don't seem to be. Ignore these.
