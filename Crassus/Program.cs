@@ -37,7 +37,7 @@ namespace Crassus
             {
                 string help = 
 $@"Crassus v{appVersion} [ Will Dormann ]
-- For more information visit https://github.com/wdormann/crassus
+- For more information visit https://github.com/vullabs/crassus
 
 Usage: Crassus.exe [PMLFile] [options]
 
