@@ -1055,6 +1055,12 @@ namespace Crassus.Crassus
                     continue;
                 }
 
+                if (e.Process.ProcessName == "csrss.exe")
+                {
+                    // csrss.exe stuff isn't interesting.
+                    continue;
+                }
+
                 if (p.Contains("local\\microsoft\\onedrive\\"))
                 {
                     // Windows does things with OneDrive that look to be exploitable, but don't seem to be. Ignore these.
