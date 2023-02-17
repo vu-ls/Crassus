@@ -17,6 +17,7 @@
 * [Why "Crassus"](#why-crassus)
     * [Did you really make yet another privilege escalation discovery tool?](#did-you-really-make-yet-another-privilege-escalation-discovery-tool)
     * [Features](#features)
+    * [Flowchart](#flowchart)
 * [Screenshots](#screenshots)
     * [Crassus Execution](#Crassus-execution)
     * [CSV Output](#csv-output)
@@ -61,6 +62,11 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 * Crassus will create source code for proxy DLLs for all missing DLLs that were identified. For instance, if an application is vulnerable to DLL Hijacking via `version.dll`, Crassus will create `version.cpp` and `version.def` files for you with all the exports included in it. By default the proxy DLLs will launch `calc.exe`. Build scripts are included to build the DLLs on Visual Studio or MinGW.
 * For other events of interest, such as creating a process or loading a library, the ability for unprivileged users to modify the file or any parts of the path to the file is investigated.
 * Able to process large PML files and store all events of interest in an output CSV file.
+
+## Flowchart
+
+The general gist of how Crassus works can be summarized in this flowchart:
+![Crassus flowchart(/screenshots/Crassus_flowchart.png) "Crassus flowchart"]
 
 # Screenshots
 
