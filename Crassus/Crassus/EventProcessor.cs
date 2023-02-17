@@ -1012,7 +1012,7 @@ namespace Crassus.Crassus
                         // We've already got Load_image and Process_Create events. We don't care about existing files
                         continue;
                     }
-                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe") || e.Path.ToLower().Contains("}-microsoftedge_"))
+                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe") || e.Path.ToLower().Contains("}-microsoftedge_") || e.Path.ToLower().EndsWith("\\appdata\\local\\microsoft\\windowsapps\\gamebarelevatedft_alias.exe"))
                     {
                         // More noise, apparently.
                         continue;
