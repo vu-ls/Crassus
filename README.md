@@ -66,7 +66,7 @@ Accenture made a tool called [Spartacus](https://github.com/Accenture/Spartacus)
 ## Flowchart
 
 The general gist of how Crassus works can be summarized in this flowchart:
-![Crassus flowchart(/screenshots/Crassus_flowchart.png) "Crassus flowchart"]
+![Crassus flowchart](/screenshots/Crassus_flowchart.png "Crassus flowchart")
 
 # Screenshots
 
