@@ -263,16 +263,26 @@ namespace Crassus.Crassus
                     if (!Directory.Exists(MissingFileDir))
                     {
                         Logger.Debug(MissingFileDir + "doesn't even exist!");
-                        try
+                        if (MissingFileDir.StartsWith("c:\\"))
                         {
-                            Directory.CreateDirectory(MissingFileDir);
-                            Logger.Success("We can create the missing " + MissingFileDir + " directory to place " + MissingFile + LoadedInfo);
+                            try
+                            {
+                                Directory.CreateDirectory(MissingFileDir);
+                                Logger.Success("We can create the missing " + MissingFileDir + " directory to place " + MissingFile + LoadedInfo);
+                                isBadItem = true;
+                            }
+                            catch
+                            {
+                                // Carry on...
+                            }
+
+                        }
+                        else
+                        {
+                            Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
                             isBadItem = true;
                         }
-                        catch
-                        {
-                            // Carry on...
-                        }
+
                     }
                     else if (HasWritePermissionOnPath(MissingFileDir))
                     {
@@ -285,14 +295,8 @@ namespace Crassus.Crassus
                         }
 
                     }
-                    else if (!MissingFileDir.StartsWith("c:\\"))
-                    {
-                        Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
-                        isBadItem = true;
-                    }
-
-
                 }
+
                 if (isBadItem)
                 {
                     RuntimeData.FoundBad = true;
