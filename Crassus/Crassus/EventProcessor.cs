@@ -284,7 +284,8 @@ namespace Crassus.Crassus
                         }
 
                     }
-                    else if (HasWritePermissionOnPath(MissingFileDir))
+                    // It seems that the checking for the write permission check isn't sufficient. So we'll blindly attempt to write to the dir for now.
+                    else if (HasWritePermissionOnPath(MissingFileDir) || true)
                     {
                         if (TryWritingToDir(MissingFileDir))
                         // We shouldn't have to do this, but some AV software can do weird things where real-world behavior
@@ -960,7 +961,8 @@ namespace Crassus.Crassus
                     continue;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf"))
+                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" 
+                || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf"))
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
                     // e.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
@@ -1016,7 +1018,9 @@ namespace Crassus.Crassus
                         // We've already got Load_image and Process_Create events. We don't care about existing files
                         continue;
                     }
-                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe") || e.Path.ToLower().Contains("}-microsoftedge_") || e.Path.ToLower().EndsWith("\\appdata\\local\\microsoft\\windowsapps\\gamebarelevatedft_alias.exe"))
+                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe") 
+                    || e.Path.ToLower().Contains("}-microsoftedge_") || e.Path.ToLower().EndsWith("\\appdata\\local\\microsoft\\windowsapps\\gamebarelevatedft_alias.exe") || e.Process.ProcessName.ToLower() == "mpwigstub.exe"
+                    || e.Path.ToLower().EndsWith("\\msteamsupdate.exe") || e.Path.ToLower().EndsWith("\\msteams.exe"))
                     {
                         // More noise, apparently.
                         continue;
