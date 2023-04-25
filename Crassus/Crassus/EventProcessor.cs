@@ -961,7 +961,7 @@ namespace Crassus.Crassus
                     continue;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe" 
+                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe"
                 || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf"))
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
@@ -1018,7 +1018,7 @@ namespace Crassus.Crassus
                         // We've already got Load_image and Process_Create events. We don't care about existing files
                         continue;
                     }
-                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe") 
+                    else if (e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\skype.exe") || e.Path.ToLower().EndsWith("appdata\\local\\microsoft\\windowsapps\\microsoft.skypeapp_kzf8qxf38zg5c\\skype.exe")
                     || e.Path.ToLower().Contains("}-microsoftedge_") || e.Path.ToLower().EndsWith("\\appdata\\local\\microsoft\\windowsapps\\gamebarelevatedft_alias.exe") || e.Process.ProcessName.ToLower() == "mpwigstub.exe"
                     || e.Path.ToLower().EndsWith("\\msteamsupdate.exe") || e.Path.ToLower().EndsWith("\\msteams.exe"))
                     {
@@ -1066,6 +1066,12 @@ namespace Crassus.Crassus
                 if (e.Process.ProcessName == "csrss.exe")
                 {
                     // csrss.exe stuff isn't interesting.
+                    continue;
+                }
+
+                if (e.Process.ProcessName.ToLower() == "mpsigstub.exe")
+                {
+                    // Defender update stuff. Ignore.
                     continue;
                 }
 
