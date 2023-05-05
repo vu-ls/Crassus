@@ -262,7 +262,7 @@ namespace Crassus.Crassus
                     Logger.Debug("Checking if we can write to: " + MissingFileDir);
                     if (!Directory.Exists(MissingFileDir))
                     {
-                        Logger.Debug(MissingFileDir + "doesn't even exist!");
+                        Logger.Debug(MissingFileDir + " doesn't even exist!");
                         if (MissingFileDir.StartsWith("c:\\"))
                         {
                             try
