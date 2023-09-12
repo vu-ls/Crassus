@@ -147,7 +147,7 @@ extern "C" {
       STARTUPINFO si;
       PROCESS_INFORMATION pi;
 
-      CreateProcess(NULL, "calc.exe", NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi);
+      CreateProcess(NULL, "calc.exe", NULL, NULL, FALSE, NULL, NULL, NULL, &amp;si, &amp;pi);
   }
 
   BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
