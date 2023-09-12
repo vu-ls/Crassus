@@ -146,7 +146,7 @@ extern "C" {
       // Run your payload here.
       STARTUPINFO si;
       PROCESS_INFORMATION pi;
-      
+
       CreateProcess(NULL, "calc.exe", NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi);
   }
 
@@ -189,8 +189,9 @@ extern "C" {
 </value>
   </data>
   <data name="build.sh" xml:space="preserve">
-    <value>ls *.cpp | xargs grep -l //BUILD_AS_32 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "i686-w64-mingw32-g++ -c -o {}.o {}.cpp -D ADD_EXPORTS &amp;&amp; i686-w64-mingw32-g++ -o {}.dll {}.o {}.def -s -shared -Wl,--subsystem,windows || i686-w64-mingw32-g++ -c -o {}.o {}.cpp &amp;&amp; i686-w64-mingw32-g++ -o {}.dll {}.o -s -shared -Wl,--subsystem,windows"
-ls *.cpp | xargs grep -l //BUILD_AS_64 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "x86_64-w64-mingw32-g++ -c -o {}.o {}.cpp -D ADD_EXPORTS &amp;&amp; x86_64-w64-mingw32-g++ -o {}.dll {}.o {}.def -s -shared -Wl,--subsystem,windows || x86_64-w64-mingw32-g++ -c -o {}.o {}.cpp &amp;&amp; x86_64-w64-mingw32-g++ -o {}.dll {}.o -s -shared -Wl,--subsystem,windows"
+    <value>ls *.cpp | xargs grep -l //BUILD_AS_32 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "i686-w64-mingw32-g++ {}.o {}.def -shared -o {}.dll || i686-w64-mingw32-g++ {}.o -shared -o {}.dll"
+ls *.cpp | xargs grep -l //BUILD_AS_64 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "x86_64-w64-mingw32-g++ {}.o {}.def -shared -o {}.dll || x86_64-w64-mingw32-g++ i686-w64-mingw32-g++ {}.o -shared -o {}.dll"
+
 </value>
   </data>
   <data name="build.bat" xml:space="preserve">
