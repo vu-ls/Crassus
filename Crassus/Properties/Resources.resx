@@ -185,6 +185,8 @@ extern "C" {
 [openssl_init]
 # This will attempt to load the file c:\tmp\calc.dll as part of OpenSSL initialization
 # Be sure to pay attention to whether this needs to be a 64-bit or a 32-bit library
+# Also, if your libcrypto DLL is not built with DSO_WIN32, the application may not load
+# the specified DLL after openssl.cnf is parsed
 /tmp/calc = asdf
 </value>
   </data>
