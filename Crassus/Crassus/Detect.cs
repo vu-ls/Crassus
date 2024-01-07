@@ -1,35 +1,31 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Crassus.Crassus
 {
-    class Detect
+    internal class Detect
     {
         [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern int SHGetSpecialFolderPath(IntPtr hwndOwner, IntPtr lpszPath, int nFolder, int fCreate);
+        private static extern int SHGetSpecialFolderPath(IntPtr hwndOwner, IntPtr lpszPath, int nFolder, int fCreate);
 
         // This is what we consider "OS Paths".
         private const int CSIDL_WINDOWS = 0x0024;
-        
+
         private const int CSIDL_SYSTEM = 0x0025;
         private const int CSIDL_SYSTEMX86 = 0x0029;
-        
+
         private const int CSIDL_PROGRAM_FILES = 0x0026;
         private const int CSIDL_PROGRAM_FILESX86 = 0x002a;
 
         private List<string> OSPaths = new List<string>();
 
-        private Dictionary<int, List<string>> AlreadyDetected = new Dictionary<int, List<string>>();
+        private readonly Dictionary<int, List<string>> AlreadyDetected = new Dictionary<int, List<string>>();
 
         private struct ProcessInfoStruct
         {
@@ -41,7 +37,7 @@ namespace Crassus.Crassus
         {
             LoadOSPaths();
 
-            do
+            while (true)
             {
                 try
                 {
@@ -50,7 +46,10 @@ namespace Crassus.Crassus
                     // Create one task for each process we need to get the modules (DLLs) for. This drops execution from 7 seconds down to 2.
                     foreach (Process process in Process.GetProcesses())
                     {
-                        Task<ProcessInfoStruct> task = new Task<ProcessInfoStruct>(() => GetProcessInfo(process));
+                        Task<ProcessInfoStruct> task = new Task<ProcessInfoStruct>(() =>
+                        {
+                            return GetProcessInfo(process);
+                        });
                         task.Start();
                         allTasks.Add(task);
                     }
@@ -69,7 +68,7 @@ namespace Crassus.Crassus
 
                 // Adding a sleep here to give the CPU some breathing room.
                 Thread.Sleep(1000);
-            } while (true);
+            }
         }
 
         private void LoadOSPaths()
@@ -87,7 +86,7 @@ namespace Crassus.Crassus
         private string GetSpecialFolder(int folder)
         {
             IntPtr path = Marshal.AllocHGlobal(260 * 2); // Unicode.
-            SHGetSpecialFolderPath(IntPtr.Zero, path, folder, 0);
+            _ = SHGetSpecialFolderPath(IntPtr.Zero, path, folder, 0);
             string result = Marshal.PtrToStringUni(path);
             Marshal.FreeHGlobal(path);
             return result;
@@ -95,10 +94,12 @@ namespace Crassus.Crassus
 
         private ProcessInfoStruct GetProcessInfo(Process process)
         {
-            ProcessInfoStruct info = new ProcessInfoStruct();
-            // Saving it here as it's a pain to try and get from the result of an async task.
-            info.process = process;
-            info.DLLs = new List<string>();
+            ProcessInfoStruct info = new ProcessInfoStruct
+            {
+                // Saving it here as it's a pain to try and get from the result of an async task.
+                process = process,
+                DLLs = new List<string>()
+            };
 
             try
             {
@@ -122,14 +123,14 @@ namespace Crassus.Crassus
             foreach (Task<ProcessInfoStruct> task in tasks)
             {
                 ProcessInfoStruct result = task.Result;
-                if (result.DLLs.Count() == 0)
+                if (result.DLLs.Count == 0)
                 {
                     // No DLLs for this process, probably cause we got denied when tried to access it.
                     continue;
                 }
 
                 List<string> findings = FindProxyingDLLs(result.DLLs);
-                if (findings.Count() == 0)
+                if (findings.Count == 0)
                 {
                     // No duplicate DLLs found.
                     continue;
@@ -157,9 +158,8 @@ namespace Crassus.Crassus
                     return true;
                 }
             }
+            else // It doesn't exist.
 
-            // It doesn't exist.
-            if (!AlreadyDetected.ContainsKey(process.Id))
             {
                 AlreadyDetected.Add(process.Id, new List<string>());
             }
@@ -202,7 +202,7 @@ namespace Crassus.Crassus
                     // The current instance is in an OS path while the previous one isn't.
                     findings.Add(previousFile);
                 }
-                else if ((!previousFileInOSPath && !currentFileInOSPath) && (previousFile.ToLower() != dll.ToLower()))
+                else if (!previousFileInOSPath && !currentFileInOSPath && (!string.Equals(previousFile, dll, StringComparison.OrdinalIgnoreCase)))
                 {
                     // Both files are outside of OS paths, report both of them.
                     findings.Add(previousFile);

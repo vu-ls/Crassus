@@ -4,16 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Crassus.Crassus.CommandLine
 {
-    class CommandLineParser
+    internal class CommandLineParser
     {
         private readonly string[] RawArguments;
 
-        private Dictionary<string, string> GlobalArguments = new Dictionary<string, string>
+        private readonly Dictionary<string, string> GlobalArguments = new Dictionary<string, string>
         {
             { "pml", "" },
             { "pmc", "" },
@@ -53,8 +51,17 @@ namespace Crassus.Crassus.CommandLine
 
             // Remove null values.
             return arguments
-                .Where(v => (v.Value != null))
-                .ToDictionary(v => v.Key, v => v.Value);
+                .Where(v =>
+                {
+                    return v.Value != null;
+                })
+                .ToDictionary(v =>
+                {
+                    return v.Key;
+                }, v =>
+                {
+                    return v.Value;
+                });
         }
 
         private string GetArgument(string name, bool isSwitch = false)
@@ -63,7 +70,7 @@ namespace Crassus.Crassus.CommandLine
 
             for (int i = 0; i < RawArguments.Length; i++)
             {
-                if (RawArguments[i].ToLower() == name.ToLower())
+                if (string.Equals(RawArguments[i], name, StringComparison.OrdinalIgnoreCase))
                 {
                     if (isSwitch)
                     {
@@ -91,14 +98,14 @@ namespace Crassus.Crassus.CommandLine
                 switch (argument.Key.ToLower())
                 {
                     case "debug":
-                        if (argument.Value.ToLower() != "false")
+                        if (!string.Equals(argument.Value, "false", StringComparison.OrdinalIgnoreCase))
                         {
                             RuntimeData.Debug = (argument.Value.Length > 0);
                             Logger.IsDebug = RuntimeData.Debug;
                         }
                         break;
                     case "verbose":
-                        if (argument.Value.ToLower() != "false")
+                        if (!string.Equals(argument.Value, "false", StringComparison.OrdinalIgnoreCase))
                         {
                             RuntimeData.Verbose = (argument.Value.Length > 0);
                             Logger.IsVerbose = RuntimeData.Verbose;
@@ -117,8 +124,14 @@ namespace Crassus.Crassus.CommandLine
                         RuntimeData.TrackExecutables = argument.Value
                             .Split(',')
                             .ToList()
-                            .Select(s => s.Trim()) // Trim
-                            .Where(s => !string.IsNullOrWhiteSpace(s)) // Remove empty
+                            .Select(s =>
+                            {
+                                return s.Trim();
+                            }) // Trim
+                            .Where(s =>
+                            {
+                                return !string.IsNullOrWhiteSpace(s);
+                            }) // Remove empty
                             .Distinct() // Remove duplicates
                             .ToList();
                         break;
@@ -129,7 +142,7 @@ namespace Crassus.Crassus.CommandLine
                         RuntimeData.ExportsOutputDirectory = argument.Value;
                         break;
                     case "existing-log":
-                        if (argument.Value.ToLower() != "false")
+                        if (!string.Equals(argument.Value, "false", StringComparison.OrdinalIgnoreCase))
                         {
                             RuntimeData.ProcessExistingLog = (argument.Value.Length > 0);
                         }
@@ -138,27 +151,26 @@ namespace Crassus.Crassus.CommandLine
                         RuntimeData.ProxyDllTemplate = argument.Value;
                         break;
                     case "all":
-                        if (argument.Value.ToLower() != "false")
+                        if (!string.Equals(argument.Value, "false", StringComparison.OrdinalIgnoreCase))
                         {
                             RuntimeData.IncludeAllDLLs = (argument.Value.Length > 0);
                         }
                         break;
                     case "detect":
-                        if (argument.Value.ToLower() != "false")
+                        if (!string.Equals(argument.Value, "false", StringComparison.OrdinalIgnoreCase))
                         {
                             RuntimeData.DetectProxyingDLLs = (argument.Value.Length > 0);
                         }
                         break;
                     default:
                         throw new Exception("Unknown argument: " + argument.Key);
-
                 }
             }
 
             // For debug.
             foreach (KeyValuePair<string, string> argument in arguments)
             {
-                Logger.Debug(String.Format("Command Line (raw): {0} = {1}", argument.Key, argument.Value));
+                Logger.Debug($"Command Line (raw): {argument.Key} = {argument.Value}");
             }
 
             SanitiseRuntimeData();
@@ -166,12 +178,12 @@ namespace Crassus.Crassus.CommandLine
 
         private void SanitiseExistingLogProcessing()
         {
-            if (Environment.GetCommandLineArgs().Count() < 2)
+            if (Environment.GetCommandLineArgs().Length < 2)
             {
                 // We'll never get here.  But whatevs.
                 throw new Exception("Please specify a PML file to parse (Environment.GetCommandLineArgs.count()).");
             }
-            else if (RuntimeData.ProcMonLogFile == "")
+            else if (RuntimeData.ProcMonLogFile?.Length == 0)
             {
                 RuntimeData.ProcMonLogFile = Environment.GetCommandLineArgs()[1];
             }
@@ -189,12 +201,11 @@ namespace Crassus.Crassus.CommandLine
 
         private void SanitiseHijackingDetection()
         {
-
             // Log and Config files.
-            if (RuntimeData.ProcMonConfigFile == "")
+            if (RuntimeData.ProcMonConfigFile?.Length == 0)
             {
                 // If --pmc is not passed we'll need to create it. In this case we must have a --pml parameter.
-                if (RuntimeData.ProcMonLogFile == "")
+                if (RuntimeData.ProcMonLogFile?.Length == 0)
                 {
                     throw new Exception("--pml is missing");
                 }
@@ -215,9 +226,9 @@ namespace Crassus.Crassus.CommandLine
                 ProcMonPMC pmc = new ProcMonPMC(RuntimeData.ProcMonConfigFile);
 
                 // If the PMC file has no logfile/backing file, check to see if --pml has been set.
-                if (pmc.GetConfiguration().Logfile == "")
+                if (pmc.GetConfiguration().Logfile?.Length == 0)
                 {
-                    if (RuntimeData.ProcMonLogFile == "")
+                    if (RuntimeData.ProcMonLogFile?.Length == 0)
                     {
                         throw new Exception("The --pmc file that was passed has no log/backing file configured and no --pml file has been passed either. Either setup the backing file in the existing PML file or pass a --pml parameter");
                     }
@@ -234,14 +245,13 @@ namespace Crassus.Crassus.CommandLine
 
         private void SanitiseSharedArguments()
         {
-
             if (RuntimeData.TrackExecutables.Any())
             {
-                Logger.Debug("--exe passed, will track the following executables: " + String.Join(", ", RuntimeData.TrackExecutables.ToArray()));
+                Logger.Debug("--exe passed, will track the following executables: " + string.Join(", ", RuntimeData.TrackExecutables.ToArray()));
             }
 
             // Exports directory.
-            if (RuntimeData.ExportsOutputDirectory == "")
+            if (RuntimeData.ExportsOutputDirectory?.Length == 0)
             {
                 Logger.Debug("No --exports passed, will skip proxy DLL generation");
             }

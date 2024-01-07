@@ -1,20 +1,19 @@
-﻿using Crassus.ProcMon;
-using Crassus.Crassus;
-using Crassus.Crassus.CommandLine;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
+using Crassus.Crassus;
+using Crassus.Crassus.CommandLine;
+using Crassus.ProcMon;
 
 namespace Crassus
 {
-    class Program
+    internal static class Program
     {
         static private bool IsCurrentUserAnAdmin()
         {
-            var principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
+            WindowsPrincipal principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
         static private bool IsCurrentUserInAdminGroup()
@@ -26,16 +25,20 @@ namespace Crassus
             // When a computer joins a domain, the Domain Admins group is added to
             // the Administrators group. When a server becomes a domain controller,
             // the Enterprise Admins group also is added to the Administrators group.
-            var principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
-            var claims = principal.Claims;
-            return (claims.FirstOrDefault(c => c.Value == "S-1-5-32-544") != null);
+            WindowsPrincipal principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
+            System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims = principal.Claims;
+            return claims.Any(c =>
+            {
+                return c.Value == "S-1-5-32-544";
+            });
         }
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
-            string appVersion = String.Format("{0}.{1}.{2}", Assembly.GetExecutingAssembly().GetName().Version.Major.ToString(), Assembly.GetExecutingAssembly().GetName().Version.Minor.ToString(), Assembly.GetExecutingAssembly().GetName().Version.Build.ToString());
+            string appVersion = $"{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}.{Assembly.GetExecutingAssembly().GetName().Version.Build}";
             if (args.Length == 0)
             {
-                string help = 
+                string help =
 $@"Crassus v{appVersion} [ Will Dormann ]
 - For more information visit https://github.com/vullabs/crassus
 
@@ -61,21 +64,20 @@ Crassus.exe C:\tmp\Bootlog.PML
                 return;
             }
 
-            
             Logger.Info($"Crassus v{appVersion}");
 
             try
             {
                 // This will parse everything into RuntimeData.*
                 CommandLineParser cmdParser = new CommandLineParser(args);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Logger.Error(e.Message);
 #if DEBUG
                 Console.ReadLine();
 #endif
                 return;
             }
-
 
             if (RuntimeData.DetectProxyingDLLs)
             {
@@ -96,7 +98,6 @@ Crassus.exe C:\tmp\Bootlog.PML
 
                 if (!RuntimeData.ProcessExistingLog)
                 {
-
                     Logger.Verbose("Making sure there are no ProcessMonitor instances...");
                     manager.TerminateProcessMonitor();
 
@@ -134,7 +135,7 @@ Crassus.exe C:\tmp\Bootlog.PML
                 Logger.Info("Reading events file...");
                 ProcMonPML log = new ProcMonPML(RuntimeData.ProcMonLogFile);
 
-                Logger.Info("Found " + String.Format("{0:N0}", log.TotalEvents()) + " events...");
+                Logger.Info($"Found {log.TotalEvents():N0} events...");
 
                 EventProcessor processor = new EventProcessor(log);
                 processor.Run();
@@ -147,7 +148,6 @@ Crassus.exe C:\tmp\Bootlog.PML
                         Logger.Info("Proxy DLL sources stored in: " + RuntimeData.ExportsOutputDirectory);
                     }
                 }
-
             }
 
             Logger.Success("All done");

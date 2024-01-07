@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using System.Runtime.InteropServices.ComTypes;
 
 namespace Crassus.ProcMon
 {
-    class ProcMonConstants
+    internal static class ProcMonConstants
     {
         public enum PMCConfigName
         {
@@ -35,13 +29,13 @@ namespace Crassus.ProcMon
             HighlightRules
         }
 
-        public enum FilterRuleAction : Byte
+        public enum FilterRuleAction : byte
         {
             EXCLUDE = 0,
             INCLUDE = 1,
         }
 
-        public enum FilterRuleRelation : Int32
+        public enum FilterRuleRelation : int
         {
             IS = 0,
             IS_NOT = 1,
@@ -53,7 +47,7 @@ namespace Crassus.ProcMon
             EXCLUDES = 7
         }
 
-        public enum FilterRuleColumn : Int32
+        public enum FilterRuleColumn : int
         {
             NONE = 0,
             DATE_AND_TIME = 40052,
@@ -85,7 +79,7 @@ namespace Crassus.ProcMon
             COMPLETION_TIME = 40164
         }
 
-        public enum EventClassType : Int32
+        public enum EventClassType : int
         {
             Unknown = 0,
             Process = 1,
@@ -95,7 +89,7 @@ namespace Crassus.ProcMon
             Network = 5
         }
 
-        public enum EventProcessOperation : Int16
+        public enum EventProcessOperation : short
         {
             Process_Defined = 0,
             Process_Create = 1,
@@ -109,7 +103,8 @@ namespace Crassus.ProcMon
             System_Statistics = 9
         }
 
-        public enum EventFileSystemOperation : Int16
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Roslynator", "RCS1234:Duplicate enum value", Justification = "The values defined are properly assigned.")]
+        public enum EventFileSystemOperation : short
         {
             VolumeDismount = 0,
             VolumeMount = 1,
@@ -163,7 +158,8 @@ namespace Crassus.ProcMon
             PlugAndPlay = 47
         }
 
-        public enum EventResult : UInt32
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Roslynator", "RCS1154:Sort enum members", Justification = "<Pending>")]
+        public enum EventResult : uint
         {
             SUCCESS = 0,
             NO_MORE_DATA = 0x103,
@@ -316,25 +312,25 @@ namespace Crassus.ProcMon
         public struct PMCColumn
         {
             public FilterRuleColumn Column;
-            public UInt16 Width;
+            public ushort Width;
         }
 
         public struct PMCFont
         {
-            public UInt32 Height;
-            public UInt32 Width;
-            public UInt32 Escapement;
-            public UInt32 Orientation;
-            public UInt32 Weight;
-            public Byte Italic;
-            public Byte Underline;
-            public Byte StrikeOut;
-            public Byte Charset;
-            public Byte OutPrecision;
-            public Byte ClipPrecision;
-            public Byte Quality;
-            public Byte PitchAndFamily;
-            public String FaceName;         // Fixed 64 bytes.
+            public uint Height;
+            public uint Width;
+            public uint Escapement;
+            public uint Orientation;
+            public uint Weight;
+            public byte Italic;
+            public byte Underline;
+            public byte StrikeOut;
+            public byte Charset;
+            public byte OutPrecision;
+            public byte ClipPrecision;
+            public byte Quality;
+            public byte PitchAndFamily;
+            public string FaceName;         // Fixed 64 bytes.
         }
 
         public struct PMCFilter
@@ -342,55 +338,55 @@ namespace Crassus.ProcMon
             public FilterRuleColumn Column;
             public FilterRuleRelation Relation;
             public FilterRuleAction Action;
-            public String Value;
+            public string Value;
         }
 
         public struct PMLHeaderStruct
         {
-            public String Signature;
-            public Int32 Version;
-            public Int32 Architecture;
-            public String ComputerName;
-            public String SystemRootPath;
-            public UInt32 TotalEventCount;
-            public Int64 OffsetEventArray;
-            public Int64 OffsetEventOffsetArray;
-            public Int64 OffsetProcessArray;
-            public Int64 OffsetStringArray;
-            public Int64 OffsetIconArray;
-            public Int32 WindowsVersionMajor;
-            public Int32 WindowsVersionMinor;
-            public Int32 WindowsVersionBuild;
-            public Int32 WindowsVersionRevision;
-            public String WindowsServicePack;
-            public Int32 LogicalProcessors;
-            public Int64 RAMSize;
-            public Int64 OffsetEventArray2;
-            public Int64 OffsetHostsPortArray;
+            public string Signature;
+            public int Version;
+            public int Architecture;
+            public string ComputerName;
+            public string SystemRootPath;
+            public uint TotalEventCount;
+            public long OffsetEventArray;
+            public long OffsetEventOffsetArray;
+            public long OffsetProcessArray;
+            public long OffsetStringArray;
+            public long OffsetIconArray;
+            public int WindowsVersionMajor;
+            public int WindowsVersionMinor;
+            public int WindowsVersionBuild;
+            public int WindowsVersionRevision;
+            public string WindowsServicePack;
+            public int LogicalProcessors;
+            public long RAMSize;
+            public long OffsetEventArray2;
+            public long OffsetHostsPortArray;
         }
 
         public struct PMLProcessStruct
         {
-            public Int32 ProcessIndex;
-            public Int32 ProcessId;
-            public Int32 ParentProcessId;
-            public Int64 AuthenticationId;
-            public Int32 SessionNumber;
+            public int ProcessIndex;
+            public int ProcessId;
+            public int ParentProcessId;
+            public long AuthenticationId;
+            public int SessionNumber;
             public FILETIME ProcessStartTime;
             public FILETIME ProcessEndTime;
-            public Int32 IsVirtualised;
-            public Int32 Is64;
-            public Int32 indexStringIntegrity;
-            public Int32 indexStringUser;
-            public Int32 indexStringProcessName;
-            public Int32 indexStringImagePath;
-            public Int32 indexStringCommandLine;
-            public Int32 indexStringExecutableCompany;
-            public Int32 indexStringExecutableVersion;
-            public Int32 indexStringExecutableDescription;
-            public Int32 indexIconSmall;
-            public Int32 indexIconBig;
-            public Int32 ProcessModuleCount;
+            public int IsVirtualised;
+            public int Is64;
+            public int indexStringIntegrity;
+            public int indexStringUser;
+            public int indexStringProcessName;
+            public int indexStringImagePath;
+            public int indexStringCommandLine;
+            public int indexStringExecutableCompany;
+            public int indexStringExecutableVersion;
+            public int indexStringExecutableDescription;
+            public int indexIconSmall;
+            public int indexIconBig;
+            public int ProcessModuleCount;
 
             // Loaded from the indexes above.
             public string Integrity;
@@ -405,17 +401,17 @@ namespace Crassus.ProcMon
 
         public struct PMLEventStruct
         {
-            public Int32 indexProcessEvent;
-            public Int32 ThreadId;
-            public Int32 EventClass;
-            public Int16 OperationType;
-            public Int64 DurationOfOperation;
+            public int indexProcessEvent;
+            public int ThreadId;
+            public int EventClass;
+            public short OperationType;
+            public long DurationOfOperation;
             public FILETIME TimeCaptured;
-            public UInt32 Result;
-            public Int16 CapturedStackTraceDepth;
-            public Int32 DetailStructureSize;
-            public UInt32 ExtraDetailOffset;
-            public UInt32 ExtraDetailSize;
+            public uint Result;
+            public short CapturedStackTraceDepth;
+            public int DetailStructureSize;
+            public uint ExtraDetailOffset;
+            public uint ExtraDetailSize;
         }
 
         // This hard-codes every Operation for a PMLEvent to the FileSystem subset of oeprations.

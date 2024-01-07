@@ -1,25 +1,25 @@
-﻿using Crassus.ProcMon;
-using Crassus.Properties;
-using Crassus.Crassus.CommandLine;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using static Crassus.ProcMon.ProcMonConstants;
+using Crassus.Crassus.CommandLine;
+using Crassus.ProcMon;
+using Crassus.Properties;
 using static Crassus.Crassus.PEFileExports;
+using static Crassus.ProcMon.ProcMonConstants;
 
 namespace Crassus.Crassus
 {
-    class EventProcessor
+    internal class EventProcessor : IDisposable
     {
         private readonly ProcMonPML PMLog;
 
-        private Dictionary<string, PMLEvent> EventsOfInterest = new Dictionary<string, PMLEvent>();
-        private Dictionary<string, PMLEvent> ConfirmedEventsOfInterest = new Dictionary<string, PMLEvent>();
-        private List<string> libraryExtensionList = new List<string>
+        private readonly Dictionary<string, PMLEvent> EventsOfInterest = new Dictionary<string, PMLEvent>();
+        private readonly Dictionary<string, PMLEvent> ConfirmedEventsOfInterest = new Dictionary<string, PMLEvent>();
+        private readonly List<string> libraryExtensionList = new List<string>
         // For missing files that are attempted to be opened, anything in this list will be marked as notable.
         // If we reported all missing files, the false-positive rate would go through the roof.
         // TODO: Maybe there's a comprehensive list of likely to be LoadLibrary'd file extensions
@@ -34,8 +34,9 @@ namespace Crassus.Crassus
             ".acm",
             ".ppi",
             };
-        private List<string> immutableDirParts = new List<string>();
-        private static List<string> pathsWithNoWriteACLs = new List<string>();
+        private readonly List<string> immutableDirParts = new List<string>();
+        private static readonly List<string> pathsWithNoWriteACLs = new List<string>();
+        private bool disposedValue;
 
         public EventProcessor(ProcMonPML log)
         {
@@ -52,7 +53,7 @@ namespace Crassus.Crassus
             watch.Stop();
             if (RuntimeData.Debug)
             {
-                Logger.Debug(String.Format("FindEvents() took {0:N0}ms", watch.ElapsedMilliseconds));
+                Logger.Debug($"FindEvents() took {watch.ElapsedMilliseconds:N0}ms");
             }
 
             // Extract all DLL paths into a list.
@@ -77,14 +78,13 @@ namespace Crassus.Crassus
                             MissingDlls.Add(name);
                         }
                     }
-
                 }
                 catch (Exception e)
                 {
-                    //Logger.Error(e.Message);
+                    Logger.Error(e.Message);
                 }
             }
-            Logger.Verbose("Found " + String.Format("{0:N0}", MissingDlls.Count()) + " unique DLLs...");
+            Logger.Verbose($"Found {MissingDlls.Count:N0} unique DLLs...");
             //////////////////////////////////////////////////////////////////////////////////
 
             //Now try to find the actual DLL that was loaded. For example if 'version.dll' was missing, identify
@@ -100,17 +100,9 @@ namespace Crassus.Crassus
             //foreach (string PathName in Paths)
             foreach (KeyValuePair<string, PMLEvent> item in EventsOfInterest)
             {
-                bool is64bit;
                 bool isBadItem = false;
                 bool fileLocked = false;
-                if (item.Value.Process.Is64 == 1)
-                {
-                    is64bit = true;
-                }
-                else
-                {
-                    is64bit = false;
-                }
+                bool is64bit = item.Value.Process.Is64 == 1;
                 string PathName = item.Key.ToLower();
 
                 if (File.Exists(PathName))
@@ -130,6 +122,9 @@ namespace Crassus.Crassus
                     }
                     catch
                     {
+                        // Since we have validated the paths before,
+                        // we should not expect an incorrect path string.
+                        // But there is always a possibility.
                         continue;
                     }
                     if (libraryExtensionList.Contains(fileExtension))
@@ -175,7 +170,6 @@ namespace Crassus.Crassus
                         }
                     }
 
-
                     string Dir = FindMutableDirPart(PathName);
                     if (Dir != "")
                     {
@@ -199,8 +193,6 @@ namespace Crassus.Crassus
                             isBadItem = true;
                         }
                     }
-
-
                 }
                 else
                 {
@@ -215,11 +207,13 @@ namespace Crassus.Crassus
                     try
                     {
                         fileExtension = Path.GetExtension(PathName.ToLower());
-                        //Logger.Info(fileExtension);
+                        Logger.Debug(fileExtension);
                     }
                     catch
                     {
-                        //Logger.Warning(PathName);
+                        // Since we have validated the paths before,
+                        // we should not expect an incorrect path string.
+                        // But there is always a possibility.
                         continue;
                     }
                     if (libraryExtensionList.Contains(fileExtension) || fileExtension == ".cnf")
@@ -251,11 +245,11 @@ namespace Crassus.Crassus
                     try
                     {
                         MissingFileDir = Path.GetDirectoryName(PathName).ToLower();
-                        MissingFile = Path.GetFileName(PathName).ToLower(); ;
+                        MissingFile = Path.GetFileName(PathName).ToLower();
                     }
                     catch
                     {
-                        Logger.Debug("Error parsing " + PathName);
+                        Logger.Debug($"Error parsing {PathName}");
                         continue;
                     }
 
@@ -267,22 +261,32 @@ namespace Crassus.Crassus
                         {
                             try
                             {
-                                Directory.CreateDirectory(MissingFileDir);
+                                _ = Directory.CreateDirectory(MissingFileDir);
                                 Logger.Success("We can create the missing " + MissingFileDir + " directory to place " + MissingFile + LoadedInfo);
                                 isBadItem = true;
                             }
-                            catch
+                            catch (UnauthorizedAccessException)
                             {
+                                // Separated for debugging purposes
                                 // Carry on...
                             }
-
+                            catch (IOException)
+                            {
+                                // Separated for debugging purposes
+                                // Carry on...
+                            }
+                            catch (Exception e)
+                            {
+                                Type et = e.GetType();
+                                Logger.Error(e.Message);
+                                // Carry on...
+                            }
                         }
                         else
                         {
                             Logger.Warning("Ability to place the missing " + PathName + " should be investigated." + LoadedInfo);
                             isBadItem = true;
                         }
-
                     }
                     // It seems that the checking for the write permission check isn't sufficient. So we'll blindly attempt to write to the dir for now.
                     else if (HasWritePermissionOnPath(MissingFileDir) || true)
@@ -294,7 +298,6 @@ namespace Crassus.Crassus
                             Logger.Success("We can place the missing " + MissingFile + " in " + MissingFileDir + LoadedInfo);
                             isBadItem = true;
                         }
-
                     }
                 }
 
@@ -305,7 +308,6 @@ namespace Crassus.Crassus
                     Logger.Verbose("Potentially exploitable path access: " + item.Key);
                     ConfirmedEventsOfInterest.Add(item.Key, item.Value);
                 }
-
             }
 
             if (!RuntimeData.FoundBad)
@@ -316,14 +318,14 @@ namespace Crassus.Crassus
             {
                 if (RuntimeData.Debug)
                 {
-                    Logger.Debug(String.Format("IdentifySuccessfulEvents() took {0:N0}ms", watch.ElapsedMilliseconds));
+                    Logger.Debug($"IdentifySuccessfulEvents() took {watch.ElapsedMilliseconds:N0}ms");
                 }
 
                 if (RuntimeData.ExportsOutputDirectory != "")
                 {
                     if (!Directory.Exists(RuntimeData.ExportsOutputDirectory))
                     {
-                        Directory.CreateDirectory(RuntimeData.ExportsOutputDirectory);
+                        _ = Directory.CreateDirectory(RuntimeData.ExportsOutputDirectory);
                     }
                     ExtractExportFunctions();
                 }
@@ -337,97 +339,105 @@ namespace Crassus.Crassus
                     Logger.Warning("There was an error saving the output. In order to avoid losing the processed data");
                     Logger.Warning("we're going to give it another go. When you resolve the error described above");
                     Logger.Warning("hit ENTER and another attempt at saving the output will be made.", false, true);
-                    Console.ReadLine();
+                    _ = Console.ReadLine();
                     Logger.Warning("Trying to save file again...");
                     SaveEventsOfInterest();
                 }
             }
-
         }
 
         public static bool HasWritePermissionOnPath(string path)
         // Loop through the SIDs to see if the current user might be able to write to the specified path
         {
-            var writeAllow = false;
-            var writeDeny = false;
-            if (!pathsWithNoWriteACLs.Contains(path))
+            bool writeAllow = false;
+            bool writeDeny = false;
+            SecurityIdentifier mySID = WindowsIdentity.GetCurrent().User;
+            IdentityReferenceCollection mySIDs = WindowsIdentity.GetCurrent().Groups;
+
+            Logger.Debug("Checking if ACLs would allow writing to: " + path);
+
+            DirectorySecurity accessControlList;
+            try
             {
-                var mySID = WindowsIdentity.GetCurrent().User;
-                var mySIDs = WindowsIdentity.GetCurrent().Groups;
+                accessControlList = Directory.GetAccessControl(path);
+            }
+            catch (InvalidOperationException)
+            {
+                Logger.Debug("Failed to get access control list for " + path);
+                return false;
+            }
+            catch (Exception e)
+            {
+                Type et = e.GetType();
+                Logger.Debug("Failed to get access control list for " + path);
+                return false;
+            }
 
+            if (accessControlList == null)
+            {
+                Logger.Debug("Empty access control list for " + path);
+                return false;
+            }
 
-                Logger.Debug("Checking if ACLs would allow writing to: " + path);
+            AuthorizationRuleCollection accessRules;
+            try
+            {
+                accessRules = accessControlList.GetAccessRules(true, true,
+                                          typeof(SecurityIdentifier));
+            }
+            catch (Exception e)
+            {
+                Type et = e.GetType();
+                Logger.Debug("Failed to get access rules for " + path);
+                return false;
+            }
 
-                System.Security.AccessControl.DirectorySecurity accessControlList;
-                try
-                {
-                    accessControlList = Directory.GetAccessControl(path);
-                }
-                catch
-                {
-                    Logger.Debug("Failed to get access control list for " + path);
-                    return false;
-                }
-                if (accessControlList == null)
-                {
-                    Logger.Debug("Empty access control list for " + path);
-                    return false;
-                }
-
-
-                System.Security.AccessControl.AuthorizationRuleCollection accessRules = null;
-                try
-                {
-                    accessRules = accessControlList.GetAccessRules(true, true,
-                                              typeof(System.Security.Principal.SecurityIdentifier));
-                }
-                catch
-                {
-                    Logger.Debug("Failed to get access rules for " + path);
-                    return false;
-                }
-
-                if (accessRules == null)
+            // If there is no exception thrown, there must be a list of access rules
+            if (accessRules == null)
+            {
+                if (accessRules.Count == 0)
                 {
                     Logger.Debug("Empty access access rules for " + path);
                     return false;
                 }
-
-
-                mySIDs.Add(mySID);
-
-                foreach (FileSystemAccessRule rule in accessRules)
-                {
-                    if ((FileSystemRights.Write & rule.FileSystemRights) != FileSystemRights.Write)
-                        //Logger.Info("Skipping non-write rule");
-                        continue;
-
-                    if (rule.AccessControlType == AccessControlType.Allow)
-                        foreach (var SID in mySIDs)
-                        {
-                            if (mySIDs.Contains(rule.IdentityReference))
-                            {
-                                Logger.Debug("SID " + SID + " can write to " + path);
-                                writeAllow = true;
-                            }
-                        }
-                    else if (rule.AccessControlType == AccessControlType.Deny)
-                        foreach (var SID in mySIDs)
-                        {
-                            if (mySIDs.Contains(rule.IdentityReference))
-                            {
-
-                                writeDeny = true;
-                            }
-                        }
-                }
-                if (!writeAllow || writeDeny)
-                {
-                    pathsWithNoWriteACLs.Add(path);
-                }
             }
 
+            mySIDs.Add(mySID);
 
+            foreach (FileSystemAccessRule rule in accessRules)
+            {
+                if ((FileSystemRights.Write & rule.FileSystemRights) != FileSystemRights.Write)
+                {
+                    //Logger.Info("Skipping non-write rule");
+                    continue;
+                }
+
+                if (rule.AccessControlType == AccessControlType.Allow)
+                {
+                    foreach (IdentityReference SID in mySIDs)
+                    {
+                        if (mySIDs.Contains(rule.IdentityReference))
+                        {
+                            Logger.Debug("SID " + SID + " can write to " + path);
+                            writeAllow = true;
+                        }
+                    }
+                }
+                else if (rule.AccessControlType == AccessControlType.Deny)
+                {
+                    foreach (IdentityReference SID in mySIDs)
+                    {
+                        if (mySIDs.Contains(rule.IdentityReference))
+                        {
+                            writeDeny = true;
+                        }
+                    }
+                }
+            }
+            if (!writeAllow || writeDeny)
+            {
+                pathsWithNoWriteACLs.Add(path);
+            }
             return writeAllow && !writeDeny;
         }
 
@@ -439,7 +449,7 @@ namespace Crassus.Crassus
             if (Directory.Exists(DirName))
             {
                 Logger.Debug(DirName + " already exists...");
-                var myUniqueFileName = $@"{Guid.NewGuid()}.txt";
+                string myUniqueFileName = $"{Guid.NewGuid()}.txt";
                 string FullPath = Path.Combine(DirName, myUniqueFileName);
                 //Logger.Info("Trying to create: " + FullPath);
                 try
@@ -452,15 +462,26 @@ namespace Crassus.Crassus
                     }
                     catch (Exception e)
                     {
+                        Type et = e.GetType();
                         // We're going to leave a file behind here.  Live with it.
                         Logger.Debug("Failed to delete " + FullPath);
                     }
                     //Logger.Info("Success!");
                     canWrite = true;
                 }
+                catch (UnauthorizedAccessException e)
+                {
+                    Logger.Debug($"Insufficient permissions to access {FullPath} ({e.Message}).");
+                }
+                catch (DirectoryNotFoundException e)
+                {
+                    Logger.Debug($"Could not find file {FullPath} ({e.Message}).");
+                }
                 catch (Exception e)
                 {
-                    //Logger.Error("Failed");
+                    // Other types of error to be consider handling properly.
+                    Type et = e.GetType();
+                    Logger.Error("Failed (Unknown failure reason)");
                 }
             }
             else
@@ -468,18 +489,19 @@ namespace Crassus.Crassus
                 Logger.Debug("Creating directory: " + DirName);
                 try
                 {
-                    Directory.CreateDirectory(DirName);
+                    _ = Directory.CreateDirectory(DirName);
                     canWrite = true;
                 }
-                catch
+                catch (Exception e)
                 {
+                    // Other types of error to be consider handling properly.
+                    Type et = e.GetType();
+                    Logger.Error(e.Message);
                     // Nothing
                 }
             }
             return canWrite;
-
         }
-
 
         private bool TestIfWritable(string pathname)
         // Try to see if a file path is writable by first simply attempting to open it with write permissions
@@ -501,6 +523,7 @@ namespace Crassus.Crassus
             {
                 // If we can't get a path's attributes, then there's not much we can do.
             }
+
             if (File.Exists(pathname))
             {
                 try
@@ -515,11 +538,11 @@ namespace Crassus.Crassus
                     DateTime lastAccess = File.GetLastAccessTime(pathname);
                     File.SetLastAccessTime(pathname, lastAccess);
                     Writable = true;
-                    ;
                 }
                 catch
                 {
-                    // Attempting to open a file with write permissions will throw an error if you won't be able to write to it.
+                    // Attempting to open a file with write permissions will throw an error if you won't be able to write to it
+                    // We expect them to fail if the ACLs are set properly.
                 }
             }
 
@@ -534,15 +557,13 @@ namespace Crassus.Crassus
             {
                 if (!immutableDirParts.Contains(dirPart))
                 {
-
-
                     Logger.Debug("Checking if " + dirPart + " can be renamed...");
                     try
                     {
                         Directory.Move(dirPart, dirPart + "-test");
                         Directory.Move(dirPart + "-test", dirPart);
                     }
-                    catch
+                    catch (IOException e)
                     {
                         immutableDirParts.Add(dirPart);
                         if (dirPart.Length > 3)
@@ -554,6 +575,12 @@ namespace Crassus.Crassus
                             //Logger.Info("Setting dirPart to empty string!");
                             dirPart = "";
                         }
+                    }
+                    catch (Exception e)
+                    {
+                        // Other types of error to be consider handling properly.
+                        Type et = e.GetType();
+                        Logger.Error(e.Message);
                     }
                 }
                 else
@@ -596,23 +623,26 @@ namespace Crassus.Crassus
             return filePath;
         }
 
-
         public static class SafeWalk
         {
             public static IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOpt)
             {
                 try
                 {
-                    var dirFiles = Enumerable.Empty<string>();
+                    IEnumerable<string> dirFiles = Enumerable.Empty<string>();
                     if (searchOpt == SearchOption.AllDirectories)
                     {
                         dirFiles = Directory.EnumerateDirectories(path)
-                                            .SelectMany(x => EnumerateFiles(x, searchPattern, searchOpt));
+                                            .SelectMany(x =>
+                                            {
+                                                return EnumerateFiles(x, searchPattern, searchOpt);
+                                            });
                     }
                     return dirFiles.Concat(Directory.EnumerateFiles(path, searchPattern));
                 }
-                catch (UnauthorizedAccessException ex)
+                catch (UnauthorizedAccessException e)
                 {
+                    Logger.Debug(e.Message);
                     return Enumerable.Empty<string>();
                 }
             }
@@ -636,8 +666,9 @@ namespace Crassus.Crassus
                 {
                     fileExtension = Path.GetExtension(item.Value.Path.ToLower());
                 }
-                catch
+                catch (ArgumentException e)
                 {
+                    Logger.Debug(e.Message);
                     continue;
                 }
                 if (libraryExtensionList.Contains(fileExtension))
@@ -652,13 +683,12 @@ namespace Crassus.Crassus
 
                     string actualLocation = "";
                     bool notFound = false;
-                    if (item.Value.FoundPath == "")
+                    if (item.Value.FoundPath?.Length == 0)
                     {
                         string fileName = Path.GetFileName(item.Value.Path);
-                        string fileMatch = null;
-                        if (fileMatch != null)
+                        if (!string.IsNullOrEmpty(fileName))
                         {
-                            actualLocation = fileMatch;
+                            actualLocation = fileName;
                         }
                         else
                         {
@@ -670,7 +700,6 @@ namespace Crassus.Crassus
                     {
                         actualLocation = LookForFileIfNeeded(item.Value.FoundPath);
                     }
-
 
                     if (!File.Exists(actualLocation))
                     {
@@ -684,20 +713,21 @@ namespace Crassus.Crassus
                     {
                         actualPathNoExtension = Path.Combine(Path.GetDirectoryName(actualLocation), Path.GetFileNameWithoutExtension(actualLocation));
                     }
-                    else
-                    {
-
-                    }
-
 
                     List<FileExport> exports = new List<FileExport>();
                     try
                     {
                         exports = ExportLoader.Extract(actualLocation);
                     }
+                    catch (FileNotFoundException)
+                    {
+                        // If the file is removed, there is nothing to test against.
+                    }
                     catch (Exception e)
                     {
-                        // Nothing.
+                        // Other types of error to be consider handling properly.
+                        Type et = e.GetType();
+                        Logger.Error(e.Message);
                     }
 
                     //if (exports.Count == 0)
@@ -710,12 +740,10 @@ namespace Crassus.Crassus
                     //List<string> pragma = new List<string>();
                     //string pragmaTemplate = "#pragma comment(linker,\"/export:{0}=\\\"{1}.{2},@{3}\\\"\")";
                     List<string> functions = new List<string>();
-                    string functionsTemplate = "  void {0}() {{}}";
                     //List<string> headerFunctions = new List<string>();
                     //string headerFunctionsTemplate = "ADDAPI int ADDCALL {0}();";
                     List<string> resourceFunctions = new List<string>();
-                    string resourceFunctionsTemplate = "{0} @{1}";
-                    int steps = exports.Count() / 10;
+                    int steps = exports.Count / 10;
                     if (steps == 0)
                     {
                         steps = 1;
@@ -736,11 +764,10 @@ namespace Crassus.Crassus
                         if (!ExportName.Contains("?") && !ExportName.Contains("@"))
                         {
                             // TODO: Maybe figured out how to handle mangled exports properly
-                            functions.Add(String.Format(functionsTemplate, ExportName));
+                            functions.Add($"  void {ExportName}() {{}}");
                             //headerFunctions.Add(String.Format(headerFunctionsTemplate, ExportName));
-                            resourceFunctions.Add(String.Format(resourceFunctionsTemplate, ExportName, f.Ordinal));
+                            resourceFunctions.Add($"{ExportName} @{f.Ordinal}");
                         }
-
                     }
 
                     //                    string fileContents = RuntimeData.ProxyDllTemplate.Replace("%_PRAGMA_COMMENTS_%", String.Join("\r\n", pragma.ToArray()));
@@ -753,7 +780,7 @@ namespace Crassus.Crassus
                     {
                         fileContents = fileContents.Replace("//%_BUILD_AS%", "//BUILD_AS_32");
                     }
-                    fileContents = fileContents.Replace("%_EXPORTS_%", String.Join("\r\n", functions.ToArray()));
+                    fileContents = fileContents.Replace("%_EXPORTS_%", string.Join("\r\n", functions.ToArray()));
                     string baseName = Path.GetFileNameWithoutExtension(saveAs);
                     fileContents = fileContents.Replace("%_BASENAME_%", baseName);
                     baseName = Path.Combine(RuntimeData.ExportsOutputDirectory, baseName);
@@ -762,7 +789,7 @@ namespace Crassus.Crassus
                     //fileContents = RuntimeData.ProxyDllTemplateHeader.Replace("%_EXPORTS_%", String.Join("\r\n", headerFunctions.ToArray()));
                     //File.WriteAllText(saveAs, fileContents);
                     saveAs = baseName + ".def";
-                    fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", String.Join("\r\n", resourceFunctions.ToArray()));
+                    fileContents = RuntimeData.ProxyDllTemplateResource.Replace("%_EXPORTS_%", string.Join("\r\n", resourceFunctions.ToArray()));
                     File.WriteAllText(saveAs, fileContents);
 
                     if (!notFound)
@@ -814,18 +841,11 @@ namespace Crassus.Crassus
 
             using (StreamWriter stream = File.CreateText(RuntimeData.CsvOutputFile))
             {
-                stream.WriteLine(string.Format("Process, Parent Image Path, User-controllable Path, Found DLL, Integrity, Command Line"));
+                stream.WriteLine("Process, Parent Image Path, User-controllable Path, Found DLL, Integrity, Command Line");
                 foreach (KeyValuePair<string, PMLEvent> item in ConfirmedEventsOfInterest)
                 {
                     stream.WriteLine(
-                        string.Format(
-                            "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\"",
-                            item.Value.Process.ProcessName,
-                            item.Value.Process.ImagePath,
-                            item.Value.Path,
-                            item.Value.FoundPath,
-                            item.Value.Process.Integrity,
-                            item.Value.Process.CommandLine.Replace("\"", "\"\""))
+                        $"\"{item.Value.Process.ProcessName}\",\"{item.Value.Process.ImagePath}\",\"{item.Value.Path}\",\"{item.Value.FoundPath}\",\"{item.Value.Process.Integrity}\",\"{item.Value.Process.CommandLine?.Replace("\"", "\"\"")}\""
                         );
                 }
             }
@@ -833,14 +853,14 @@ namespace Crassus.Crassus
 
         private void IdentifySuccessfulEvents(List<string> MissingDLLs)
         {
-            if (MissingDLLs.Count() == 0)
+            if (MissingDLLs.Any())
             {
                 Logger.Verbose("No DLLs identified - skipping successful event tracking");
                 return;
             }
 
-            UInt32 counter = 0;
-            UInt32 steps = PMLog.TotalEvents() / 10;
+            uint counter = 0;
+            uint steps = PMLog.TotalEvents() / 10;
             if (steps == 0)
             {
                 steps = 1;
@@ -862,14 +882,21 @@ namespace Crassus.Crassus
                 }
 
                 // Now we are looking for "CreateFile" SUCCESS events.
-                string p = e.Path.ToLower();
+                string p = e.Path.ToLowerInvariant();
+                if (!IsValidPath(p))
+                {
+                    // If the path is invalid, no need to check ACLs
+                    continue;
+                }
+
                 string fileExtension = "";
                 try
                 {
-                    fileExtension = Path.GetExtension(e.Path.ToLower());
+                    fileExtension = Path.GetExtension(p);
                 }
-                catch
+                catch (ArgumentException ex)
                 {
+                    Logger.Debug(ex.Message);
                     continue;
                 }
                 if (!libraryExtensionList.Contains(fileExtension))
@@ -887,7 +914,7 @@ namespace Crassus.Crassus
 
                 // If we are here it means we have found a DLL that was actually loaded. Extract its name.
                 string name = Path.GetFileName(p);
-                if (name == "")
+                if (name?.Length == 0)
                 {
                     continue;
                 }
@@ -899,8 +926,14 @@ namespace Crassus.Crassus
 
                 // Find all events of interest (NAME/PATH NOT FOUND) that use the same DLL.
                 List<string> keys = EventsOfInterest
-                    .Where(ve => Path.GetFileName(ve.Key).ToLower() == name && ve.Value.FoundPath == "")
-                    .Select(ve => ve.Key)
+                    .Where(ve =>
+                    {
+                        return Path.GetFileName(ve.Key).ToLower() == name && ve.Value.FoundPath?.Length == 0;
+                    })
+                    .Select(ve =>
+                    {
+                        return ve.Key;
+                    })
                     .ToList();
 
                 foreach (string key in keys)
@@ -910,20 +943,15 @@ namespace Crassus.Crassus
                     EventsOfInterest[key] = Event;
                 }
 
-                MissingDLLs.Remove(name);
-                if (MissingDLLs.Count == 0)
-                {
-                    // Abort if we have no other DLLs to look for.
-                    break;
-                }
-            } while (true);
-            Logger.Info("", true, false);
+                _ = MissingDLLs.Remove(name);
+            } while (MissingDLLs.Count > 0);
+            Logger.Info(string.Empty, true, false);
         }
 
         private void FindEvents()
         {
-            UInt32 counter = 0;
-            UInt32 steps = PMLog.TotalEvents() / 10;
+            uint counter = 0;
+            uint steps = PMLog.TotalEvents() / 10;
             if (steps == 0)
             {
                 steps = 1;
@@ -931,7 +959,7 @@ namespace Crassus.Crassus
 
             Logger.Info("Searching events...", false, true);
             PMLog.Rewind();
-            do
+            while (true)
             {
                 // We care about each of these things:
                 // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
@@ -941,7 +969,6 @@ namespace Crassus.Crassus
                 // The logic here is that anything that makes it past any of the "continue" conditions is added to EventsOfInterest
                 // For now, we're just looking at EXE and DLL files.
 
-
                 bool ProcessEvent = false;
                 string p = "";
                 if (++counter % steps == 0)
@@ -950,41 +977,42 @@ namespace Crassus.Crassus
                 }
 
                 // Get the next event from the stream.
-                PMLEvent e = PMLog.GetNextEvent().GetValueOrDefault();
-                if (!e.Loaded)
+                PMLEvent nextEvent = PMLog.GetNextEvent().GetValueOrDefault();
+                if (!nextEvent.Loaded)
                 {
                     break;
                 }
 
-                if (e.Process.ProcessName == "" || e.Path == "")
+                if (nextEvent.Process.ProcessName?.Length == 0 || nextEvent.Path?.Length == 0)
                 {
                     continue;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "msmpeng.exe" || e.Process.ProcessName.ToLower() == "mbamservice.exe"
-                || e.Process.ProcessName.ToLower() == "coreserviceshell.exe" || e.Process.ProcessName.ToLower() == "compattelrunner.exe" && !e.Path.EndsWith("openssl.cnf"))
+                if (string.Equals(nextEvent.Process.ProcessName, "msmpeng.exe", StringComparison.OrdinalIgnoreCase) || string.Equals(nextEvent.Process.ProcessName, "mbamservice.exe"
+, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(nextEvent.Process.ProcessName, "coreserviceshell.exe", StringComparison.OrdinalIgnoreCase) || (string.Equals(nextEvent.Process.ProcessName, "compattelrunner.exe", StringComparison.OrdinalIgnoreCase) && !nextEvent.Path.EndsWith("openssl.cnf")))
                 {
                     // Windows Defender and any antivirus can do things that look interesting, but are not exploitable
-                    // e.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
+                    // nextEvent.g. looking for a non-existing EXE or DLL, but for scanning it, rather than running it.
                     // So we'll just ignore this whole process.
                     continue;
                 }
 
-                if (e.EventClass == EventClassType.Process)
+                if (nextEvent.EventClass == EventClassType.Process)
                 {
                     ProcessEvent = true;
                     // Yes, Process_Create and Load_image aren't really FileSystem operations.  But Spartacus wasn't originally designed
                     // with the concept of looking anything other than FileSystem oeprations, so...
-                    if (e.Operation == EventFileSystemOperation.Process_Create)
+                    if (nextEvent.Operation == EventFileSystemOperation.Process_Create)
                     {
                         // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
-                        if (e.Path.ToLower().EndsWith("\\microsoftedgeupdate.exe"))
+                        if (nextEvent.Path.EndsWith("\\microsoftedgeupdate.exe", StringComparison.OrdinalIgnoreCase))
                         {
                             // This seems to just be noise
                             continue;
                         }
                     }
-                    else if (e.Operation == EventFileSystemOperation.Load_Image)
+                    else if (nextEvent.Operation == EventFileSystemOperation.Load_Image)
                     {
                         // 2) Privileged Load Library on a file that is itself or in a directory that is mutable by a non-privileged user
                     }
@@ -995,15 +1023,20 @@ namespace Crassus.Crassus
                     }
                 }
 
-
                 // We want a "CreateFile" that is either a "NAME NOT FOUND" or a "PATH NOT FOUND".
-                else if (e.EventClass == EventClassType.File_System)
+                else if (nextEvent.EventClass == EventClassType.File_System)
                 {
-                    p = e.Path.ToLower();
+                    p = nextEvent.Path.ToLowerInvariant();
+
+                    if (!IsValidPath(p))
+                    {
+                        // If the path is invalid, no need to check ACLs
+                        continue;
+                    }
                     string fileExtension = "";
                     //Logger.Info("We have a filesystem event: " + p);
                     // We have a FileSystem event
-                    if (e.Operation != EventFileSystemOperation.CreateFile)
+                    if (nextEvent.Operation != EventFileSystemOperation.CreateFile)
                     {
                         // Throw out anything other than CreateFile
                         continue;
@@ -1013,14 +1046,14 @@ namespace Crassus.Crassus
                         //Logger.Warning(p);
                         // Fine if it exists.  We'll still check it...
                     }
-                    else if (e.Result != EventResult.NAME_NOT_FOUND && e.Result != EventResult.PATH_NOT_FOUND)
+                    else if (nextEvent.Result != EventResult.NAME_NOT_FOUND && nextEvent.Result != EventResult.PATH_NOT_FOUND)
                     {
                         // We've already got Load_image and Process_Create events. We don't care about existing files
                         continue;
                     }
-                    else if (e.Path.ToLower().Contains("\\appdata\\local\\microsoft\\windowsapps\\") 
-                    || e.Path.ToLower().Contains("}-microsoftedge_") || e.Process.ProcessName.ToLower() == "mpwigstub.exe"
-                    || e.Path.ToLower().EndsWith("\\msteamsupdate.exe") || e.Path.ToLower().EndsWith("\\msteams.exe"))
+                    else if (nextEvent.Path.IndexOf("\\appdata\\local\\microsoft\\windowsapps\\", StringComparison.OrdinalIgnoreCase) >= 0 || nextEvent.Path.IndexOf("}-microsoftedge_", StringComparison.OrdinalIgnoreCase) >= 0 || string.Equals(nextEvent.Process.ProcessName, "mpwigstub.exe"
+, StringComparison.OrdinalIgnoreCase)
+                    || nextEvent.Path.EndsWith("\\msteamsupdate.exe", StringComparison.OrdinalIgnoreCase) || nextEvent.Path.EndsWith("\\msteams.exe", StringComparison.OrdinalIgnoreCase))
                     {
                         // More noise, apparently.
                         continue;
@@ -1032,8 +1065,9 @@ namespace Crassus.Crassus
                     {
                         fileExtension = Path.GetExtension(p.ToLower());
                     }
-                    catch
+                    catch (ArgumentException ex)
                     {
+                        Logger.Debug(ex.Message);
                         continue;
                     }
                     if (!libraryExtensionList.Contains(fileExtension) && !p.EndsWith(".exe".ToLower()) && !p.EndsWith("openssl.cnf".ToLower()))
@@ -1047,29 +1081,33 @@ namespace Crassus.Crassus
                     continue;
                 }
 
-
                 // At this point, we have loaded libraries, spawned processes, or missing files
                 // Only look at processes with higher than normal integrity
-                if (e.Process.Integrity == "Low" || e.Process.Integrity == "Medium")
+                if (nextEvent.Process.Integrity == "Low" || nextEvent.Process.Integrity == "Medium")
                 {
                     continue;
                 }
 
-                p = e.Path.ToLower();
+                p = nextEvent.Path.ToLowerInvariant();
+                if (!IsValidPath(p))
+                {
+                    // If the path is invalid, no need to check ACLs
+                    continue;
+                }
 
-                if (e.Process.ProcessName == "svchost.exe" && p.StartsWith("c:\\systemroot\\") && p.EndsWith(".sys"))
+                if (nextEvent.Process.ProcessName == "svchost.exe" && p.StartsWith("c:\\systemroot\\") && p.EndsWith(".sys"))
                 {
                     // This is an odd one for sure, but doesn't look to be exploitable
                     continue;
                 }
 
-                if (e.Process.ProcessName == "csrss.exe")
+                if (nextEvent.Process.ProcessName == "csrss.exe")
                 {
                     // csrss.exe stuff isn't interesting.
                     continue;
                 }
 
-                if (e.Process.ProcessName.ToLower() == "mpsigstub.exe")
+                if (string.Equals(nextEvent.Process.ProcessName, "mpsigstub.exe", StringComparison.OrdinalIgnoreCase))
                 {
                     // Defender update stuff. Ignore.
                     continue;
@@ -1093,11 +1131,59 @@ namespace Crassus.Crassus
                     continue;
                 }
 
-                EventsOfInterest.Add(p, e);
-                Logger.Debug(p);
-            } while (true);
-            Console.WriteLine("");
-            Logger.Info("Found " + String.Format("{0:N0}", EventsOfInterest.Count()) + " privileged events of interest...");
+                if (!IsValidPath(p))
+                {
+                    // If the path is invalid, no need to check ACLs
+                    Logger.Debug($"Skipping weird path: {p}");
+                }
+                else
+                {
+                    EventsOfInterest.Add(p, nextEvent);
+                    Logger.Debug(p);
+                }
+            }
+            Console.WriteLine(string.Empty);
+            Logger.Info($"Found {EventsOfInterest.Count:N0} privileged events of interest...");
         }
+
+        /// <summary>
+        /// Checks if a valid filesystem path.
+        /// It does not accept Windows Hard Drive Path Format
+        /// or Alternate Data Stream paths.
+        /// </summary>
+        /// <param name="path">Path extracted from event</param>
+        /// <returns>Tru if the path is a valid filesystem path.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Exceptions", "TI8110:Do not silently ignore exceptions", Justification = "<Pending>")]
+        private bool IsValidPath(string path)
+        {
+            try
+            {
+                _ = new FileInfo(path);
+                return true;
+            }
+            catch { return false; }
+        }
+
+        #region Dispose
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    PMLog?.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+        # endregion Dispose
     }
 }

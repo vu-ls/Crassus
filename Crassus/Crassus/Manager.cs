@@ -1,20 +1,16 @@
 ﻿using Crassus.ProcMon;
 using Crassus.Crassus.CommandLine;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Crassus.Crassus
 {
-    class Manager
+    internal class Manager
     {
         public string GetPMCFile()
         {
-            string pmcFile = Path.GetTempPath() + Guid.NewGuid().ToString() + ".pmc";
+            string pmcFile = $"{Path.GetTempPath()}{Guid.NewGuid()}.pmc";
             if (RuntimeData.ProcMonConfigFile != "")
             {
                 // We need to see if we must inject the backing file into the passed configuration file.
@@ -34,7 +30,6 @@ namespace Crassus.Crassus
 
             // Otherwise we have to create our own here.
             ProcMonConfig config = new ProcMonConfig();
-            
             config.AddColumn(ProcMonConstants.FilterRuleColumn.TIME_OF_DAY, 100);
             config.AddColumn(ProcMonConstants.FilterRuleColumn.PROCESS_NAME, 100);
             config.AddColumn(ProcMonConstants.FilterRuleColumn.PID, 100);
@@ -77,7 +72,7 @@ namespace Crassus.Crassus
             string procMonArguments = $"/AcceptEula /Quiet /Minimized /LoadConfig \"{RuntimeData.ProcMonConfigFile}\"";
 
             Process process = Process.Start(RuntimeData.ProcMonExecutable, procMonArguments);
-            process.WaitForInputIdle(5000);
+            _ = process.WaitForInputIdle(5000);
         }
 
         public void TerminateProcessMonitor()

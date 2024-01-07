@@ -3,32 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using static Crassus.ProcMon.ProcMonConstants;
 
 namespace Crassus.ProcMon
 {
-    class ProcMonConfig
+    internal class ProcMonConfig
     {
         // Columns.
         private List<PMCColumn> _columns = new List<PMCColumn>();
         private List<PMCFilter> _filters = new List<PMCFilter>();
         private List<PMCFilter> _highlights = new List<PMCFilter>();
-        public UInt32 ColumnCount = 0;
-        public String DbgHelpPath = "";
-        public String Logfile = "";
-        public String SourcePath = "";
-        public String SymbolPath = "";
-        public UInt32 HighlightFG = 0;
-        public UInt32 HighlightBG = 0;
-        public UInt32 AdvancedMode = 0;
-        public UInt32 Autoscroll = 0;
-        public UInt32 HistoryDepth = 0;
-        public UInt32 Profiling = 0;
-        public UInt32 DestructiveFilter = 0;
-        public UInt32 AlwaysOnTop = 0;
-        public UInt32 ResolveAddresses = 0;
+        public uint ColumnCount = 0;
+        public string DbgHelpPath = "";
+        public string Logfile = "";
+        public string SourcePath = "";
+        public string SymbolPath = "";
+        public uint HighlightFG = 0;
+        public uint HighlightBG = 0;
+        public uint AdvancedMode = 0;
+        public uint Autoscroll = 0;
+        public uint HistoryDepth = 0;
+        public uint Profiling = 0;
+        public uint DestructiveFilter = 0;
+        public uint AlwaysOnTop = 0;
+        public uint ResolveAddresses = 0;
         public PMCFont LogFont = new PMCFont();
         public PMCFont BoookmarkFont = new PMCFont();     // Not a typo.
 
@@ -81,7 +79,7 @@ namespace Crassus.ProcMon
             return _columns;
         }
 
-        public void AddColumn(FilterRuleColumn Column, UInt16 Width)
+        public void AddColumn(FilterRuleColumn Column, ushort Width)
         {
             _columns.Add(new PMCColumn { Column = Column, Width = Width });
         }
@@ -91,7 +89,7 @@ namespace Crassus.ProcMon
             _filters = Filters;
         }
 
-        public void AddFilter(FilterRuleColumn Column, FilterRuleRelation Relation, FilterRuleAction Action, String Value)
+        public void AddFilter(FilterRuleColumn Column, FilterRuleRelation Relation, FilterRuleAction Action, string Value)
         {
             _filters.Add(new PMCFilter { Column = Column, Relation = Relation, Action = Action, Value = Value });
         }
@@ -103,11 +101,11 @@ namespace Crassus.ProcMon
 
         private void SanityCheck()
         {
-            if (_columns.Count() == 0)
+            if (_columns.Count == 0)
             {
                 throw new Exception("No columns specified in the configuration");
             }
-            else if (_filters.Count() == 0)
+            else if (_filters.Count == 0)
             {
                 throw new Exception("No filters specified in the configuration");
             }
@@ -116,12 +114,15 @@ namespace Crassus.ProcMon
         public void Save(string saveAs)
         {
             SanityCheck();
-            using (var stream = File.Open(saveAs, FileMode.Create))
+            using (FileStream stream = File.Open(saveAs, FileMode.Create))
             {
-                using (var writer = new BinaryWriter(stream, Encoding.Unicode, false))
+                using (BinaryWriter writer = new BinaryWriter(stream, Encoding.Unicode, false))
                 {
                     // Int/UInt
-                    WriteConfigToFile(writer, "ColumnCount", _columns.Where(c => c.Column != FilterRuleColumn.NONE).Count());
+                    WriteConfigToFile(writer, "ColumnCount", _columns.Count(c =>
+                    {
+                        return c.Column != FilterRuleColumn.NONE;
+                    }));
                     WriteConfigToFile(writer, "HighlightFG", HighlightFG);
                     WriteConfigToFile(writer, "HighlightBG", HighlightBG);
                     WriteConfigToFile(writer, "AdvancedMode", AdvancedMode);
@@ -153,19 +154,19 @@ namespace Crassus.ProcMon
             }
         }
 
-        private void WriteConfigToFile(BinaryWriter writer, string name, Int32 value)
+        private void WriteConfigToFile(BinaryWriter writer, string name, int value)
         {
             WriteConfigHeaderToFile(writer, name, GetDataSize(value));
             writer.Write(value);
         }
 
-        private void WriteConfigToFile(BinaryWriter writer, string name, UInt32 value)
+        private void WriteConfigToFile(BinaryWriter writer, string name, uint value)
         {
             WriteConfigHeaderToFile(writer, name, GetDataSize(value));
             writer.Write(value);
         }
 
-        private void WriteConfigToFile(BinaryWriter writer, string name, String value)
+        private void WriteConfigToFile(BinaryWriter writer, string name, string value)
         {
             WriteConfigHeaderToFile(writer, name, GetDataSize(value));
             writer.Write(Encoding.Unicode.GetBytes(value));
@@ -193,21 +194,21 @@ namespace Crassus.ProcMon
 
         private void WriteConfigToFile(BinaryWriter writer, string name, List<PMCColumn> value)
         {
-            int dataSize = (name.ToLower() == "columns") ? value.Count() * 2 : value.Count() * 4;
+            int dataSize = (string.Equals(name, "columns", StringComparison.OrdinalIgnoreCase)) ? value.Count * 2 : value.Count * 4;
             WriteConfigHeaderToFile(writer, name, dataSize);
 
-            if (name.ToLower() == "columns")
+            if (string.Equals(name, "columns", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (PMCColumn item in value)
                 {
                     writer.Write(item.Width);
                 }
             }
-            else if (name.ToLower() == "columnmap")
+            else if (string.Equals(name, "columnmap", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (PMCColumn item in value)
                 {
-                    writer.Write((Int32)item.Column);
+                    writer.Write((int)item.Column);
                 }
             }
         }
@@ -218,7 +219,7 @@ namespace Crassus.ProcMon
 
             // Write the reserved byte.
             writer.Write(Convert.ToByte(1));
-            writer.Write(Convert.ToByte(value.Count()));
+            writer.Write(Convert.ToByte(value.Count));
 
             foreach (PMCFilter filter in value)
             {
@@ -227,9 +228,9 @@ namespace Crassus.ProcMon
                 writer.Write(Convert.ToByte(0));    // Reserved.
                 writer.Write(Convert.ToByte(0));    // Reserved.
                 writer.Write(Convert.ToByte(0));    // Reserved.
-                writer.Write((UInt32)filter.Column);
-                writer.Write((UInt32)filter.Relation);
-                writer.Write((Byte)filter.Action);
+                writer.Write((uint)filter.Column);
+                writer.Write((uint)filter.Relation);
+                writer.Write((byte)filter.Action);
                 writer.Write(filterValue.Length);
                 writer.Write(filterValue);
                 writer.Write(Convert.ToInt32(0));
@@ -275,13 +276,13 @@ namespace Crassus.ProcMon
         private int GetDataSize(dynamic value)
         {
             int size = 0;
-            if (value is String)
+            if (value is string)
             {
                 size = value.Length * 2;    // // double it as it's unicode.
             }
-            else if (value is Int32 || value is UInt32)
+            else if (value is int || value is uint)
             {
-                size = sizeof(Int32);
+                size = sizeof(int);
             }
             else if (value is PMCFont)
             {

@@ -2,21 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 using static Crassus.ProcMon.ProcMonConstants;
 
 namespace Crassus.ProcMon
 {
-    class ProcMonPMC
+    internal class ProcMonPMC
     {
         private readonly string PMCFile = "";
 
         // This is the dictionary that will hold all the loaded configuration.
         //private Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>();
 
-        private ProcMonConfig Configuration = new ProcMonConfig();
+        private readonly ProcMonConfig Configuration = new ProcMonConfig();
 
         public ProcMonPMC(string PMCFile)
         {
@@ -36,32 +34,32 @@ namespace Crassus.ProcMon
 
         private void Load()
         {
-            using (var stream = File.Open(PMCFile, FileMode.Open, FileAccess.Read))
+            using (FileStream stream = File.Open(PMCFile, FileMode.Open, FileAccess.Read))
             {
-                using (var reader = new BinaryReader(stream, Encoding.Unicode, false))
+                using (BinaryReader reader = new BinaryReader(stream, Encoding.Unicode, false))
                 {
-                    Int32 currentPosition = 0;
+                    int currentPosition = 0;
                     do
                     {
                         // The whole file is eventually a bit array of records, and the first 4 bytes is the
                         // size of the current one.
-                        Int32 recordSize = reader.ReadInt32();
+                        int recordSize = reader.ReadInt32();
 
                         // This is the size of the first 4 fields - always will be 0x10.
-                        Int32 firstFourFieldsSize = reader.ReadInt32();
-                        
+                        int firstFourFieldsSize = reader.ReadInt32();
+
                         // The length of the configuration name. To get it, subtract the size of the first 4
                         // fields we read previously.
-                        Int32 configNameLength = reader.ReadInt32() - firstFourFieldsSize;
+                        int configNameLength = reader.ReadInt32() - firstFourFieldsSize;
 
                         // The size of the data we have to read.
-                        Int32 dataSize = reader.ReadInt32();
+                        int dataSize = reader.ReadInt32();
 
                         // Now that we have it all, read the actual name of the configuration.
                         string configName = Encoding.Unicode.GetString(reader.ReadBytes(configNameLength));
 
                         // Try to get the column that has been loaded.
-                        Enum.TryParse(configName.Trim('\0'), out PMCConfigName PMCColumn);
+                        _ = Enum.TryParse(configName.Trim('\0'), out PMCConfigName PMCColumn);
 
                         switch (PMCColumn)
                         {
@@ -128,7 +126,7 @@ namespace Crassus.ProcMon
                         // This is in case there's a config option that we haven't accounted for above, so that
                         // it doesn't start reading random bytes when it's not supposed to.
                         currentPosition += recordSize;
-                        stream.Seek(currentPosition, SeekOrigin.Begin);
+                        _ = stream.Seek(currentPosition, SeekOrigin.Begin);
                     } while (stream.Position < stream.Length);
                 }
             }
@@ -138,25 +136,25 @@ namespace Crassus.ProcMon
         {
             List<PMCFilter> filters = new List<PMCFilter>();
 
-            reader.ReadByte();                                                  // Reserved.
+            _ = reader.ReadByte();                                                  // Reserved.
             // Number of filters.
             byte count = reader.ReadByte();
             for (int i = 0; i < count; i++)
             {
                 PMCFilter filter = new PMCFilter();
-                reader.ReadBytes(3);                                            // Reserved.
+                _ = reader.ReadBytes(3);                                            // Reserved.
                 filter.Column = (FilterRuleColumn)reader.ReadUInt32();
                 filter.Relation = (FilterRuleRelation)reader.ReadUInt32();
                 filter.Action = (FilterRuleAction)reader.ReadByte();
 
                 filter.Value = ReadBytesToString(reader, reader.ReadInt32());
-                reader.ReadUInt32();                                            // IntValue.
-                reader.ReadByte();                                              // Reserved.
+                _ = reader.ReadUInt32();                                            // IntValue.
+                _ = reader.ReadByte();                                              // Reserved.
 
                 filters.Add(filter);
             }
 
-            reader.ReadBytes(3);                                                // Reserved.
+            _ = reader.ReadBytes(3);                                                // Reserved.
 
             return filters;
         }

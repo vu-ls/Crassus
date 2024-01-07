@@ -1,19 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Crassus
 {
-    class Logger
+    internal static class Logger
     {
-        public static bool IsVerbose = false;
+        public static bool IsVerbose { get; set; }
 
-        public static bool IsDebug = false;
+        public static bool IsDebug { get; set; }
 
-        public static string ConsoleLogFile = "";
+        public static string ConsoleLogFile { get; set; } = string.Empty;
 
         public static void Verbose(string message, bool newLine = true, bool showTime = true)
         {
@@ -63,12 +60,12 @@ namespace Crassus
             Console.ResetColor();
         }
 
-        protected static string FormatString(string message)
+        internal static string FormatString(string message)
         {
             return $"[{DateTime.Now:HH:mm:ss}] {message}";
         }
 
-        protected static void Write(string message, bool newLine = true, bool showTime = true)
+        internal static void Write(string message, bool newLine = true, bool showTime = true)
         {
             message = showTime ? FormatString(message) : message;
             message += newLine ? Environment.NewLine : "";
@@ -76,10 +73,10 @@ namespace Crassus
             WriteToLogFile(message);
         }
 
-        protected static void WriteToLogFile(string message)
+        internal static void WriteToLogFile(string message)
         {
             // Write to file too.
-            if (ConsoleLogFile == "")
+            if (ConsoleLogFile?.Length == 0)
             {
                 ConsoleLogFile = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + @"\Crassus.log";
                 if (!File.Exists(ConsoleLogFile))
