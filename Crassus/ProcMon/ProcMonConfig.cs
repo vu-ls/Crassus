@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Crassus.Crassus.Exceptions;
 using static Crassus.ProcMon.ProcMonConstants;
+using ConfigurationException = Crassus.Crassus.Exceptions.ConfigurationException;
 
 namespace Crassus.ProcMon
 {
@@ -103,11 +106,11 @@ namespace Crassus.ProcMon
         {
             if (_columns.Count == 0)
             {
-                throw new Exception("No columns specified in the configuration");
+                throw new ConfigurationException("No columns specified in the configuration");
             }
             else if (_filters.Count == 0)
             {
-                throw new Exception("No filters specified in the configuration");
+                throw new ConfigurationException("No filters specified in the configuration");
             }
         }
 

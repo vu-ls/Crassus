@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Crassus.Crassus.Exceptions;
 using static Crassus.ProcMon.ProcMonConstants;
 
 namespace Crassus.ProcMon
@@ -195,11 +196,11 @@ namespace Crassus.ProcMon
             LogHeader.Version = reader.ReadInt32();
             if (LogHeader.Signature != "PML_")
             {
-                throw new Exception("Invalid file signature - it should be PML_ but it is: " + LogHeader.Signature);
+                throw new FileFormatException("Invalid file signature - it should be PML_ but it is: " + LogHeader.Signature);
             }
             else if (LogHeader.Version != 9)
             {
-                throw new Exception("Invalid file version: " + LogHeader.Version);
+                throw new FileFormatException("Invalid file version: " + LogHeader.Version);
             }
 
             LogHeader.Architecture = reader.ReadInt32();

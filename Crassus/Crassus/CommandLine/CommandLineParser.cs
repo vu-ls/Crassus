@@ -1,4 +1,5 @@
-﻿using Crassus.ProcMon;
+﻿using Crassus.Crassus.Exceptions;
+using Crassus.ProcMon;
 using Crassus.Properties;
 using System;
 using System.Collections.Generic;
@@ -163,7 +164,7 @@ namespace Crassus.Crassus.CommandLine
                         }
                         break;
                     default:
-                        throw new Exception("Unknown argument: " + argument.Key);
+                        throw new CommandLineException("Unknown argument: " + argument.Key);
                 }
             }
 
@@ -181,7 +182,7 @@ namespace Crassus.Crassus.CommandLine
             if (Environment.GetCommandLineArgs().Length < 2)
             {
                 // We'll never get here.  But whatevs.
-                throw new Exception("Please specify a PML file to parse (Environment.GetCommandLineArgs.count()).");
+                throw new CommandLineException("Please specify a PML file to parse (Environment.GetCommandLineArgs.count()).");
             }
             else if (RuntimeData.ProcMonLogFile?.Length == 0)
             {
@@ -191,7 +192,7 @@ namespace Crassus.Crassus.CommandLine
             string ContinuePMLFile = RuntimeData.ProcMonLogFile.ToLower().Replace(".pml", "") + "-1.pml";
             if (!File.Exists(RuntimeData.ProcMonLogFile))
             {
-                throw new Exception("PML file does not exist");
+                throw new CommandLineException("PML file does not exist");
             }
             else if (File.Exists(ContinuePMLFile))
             {
@@ -207,7 +208,7 @@ namespace Crassus.Crassus.CommandLine
                 // If --pmc is not passed we'll need to create it. In this case we must have a --pml parameter.
                 if (RuntimeData.ProcMonLogFile?.Length == 0)
                 {
-                    throw new Exception("--pml is missing");
+                    throw new CommandLineException("--pml is missing");
                 }
                 else if (File.Exists(RuntimeData.ProcMonLogFile))
                 {
@@ -218,7 +219,7 @@ namespace Crassus.Crassus.CommandLine
             else if (!File.Exists(RuntimeData.ProcMonConfigFile))
             {
                 // If --pmc was passed but does not exist, it's invalid.
-                throw new Exception("--pmc does not exist: " + RuntimeData.ProcMonConfigFile);
+                throw new CommandLineException($"--pmc does not exist: {RuntimeData.ProcMonConfigFile}");
             }
             else
             {
@@ -230,7 +231,7 @@ namespace Crassus.Crassus.CommandLine
                 {
                     if (RuntimeData.ProcMonLogFile?.Length == 0)
                     {
-                        throw new Exception("The --pmc file that was passed has no log/backing file configured and no --pml file has been passed either. Either setup the backing file in the existing PML file or pass a --pml parameter");
+                        throw new CommandLineException("The --pmc file that was passed has no log/backing file configured and no --pml file has been passed either. Either setup the backing file in the existing PML file or pass a --pml parameter");
                     }
                     // We'll use the --pml argument that was passed.
                     RuntimeData.InjectBackingFileIntoConfig = true;
@@ -273,7 +274,7 @@ namespace Crassus.Crassus.CommandLine
                 // Check if the file exists.
                 if (!File.Exists(RuntimeData.ProxyDllTemplate))
                 {
-                    throw new Exception("--proxy-dll-template file does not exist");
+                    throw new CommandLineException("--proxy-dll-template file does not exist");
                 }
 
                 // Load the template into the file.
@@ -290,7 +291,7 @@ namespace Crassus.Crassus.CommandLine
             // Argument combination validation.
             if (RuntimeData.ProcMonConfigFile != "" && RuntimeData.TrackExecutables.Any())
             {
-                throw new Exception("You cannot use --pmc with --exe");
+                throw new CommandLineException("You cannot use --pmc with --exe");
             }
         }
 

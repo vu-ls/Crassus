@@ -78,6 +78,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\CommandLineException.cs" />
+    <Compile Include="Exceptions\ConfigurationException.cs" />
+    <Compile Include="Exceptions\FileFormatException.cs" />
     <Compile Include="ProcMon\ProcMonPML.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
