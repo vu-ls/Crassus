@@ -971,6 +971,12 @@ namespace Crassus.Crassus
                     continue;
                 }
 
+                if (e.Path.ToLower().Contains("\\appdata\\local\\microsoft\\windowsapps\\"))
+                {
+                    // Self-updating Microsoft Windows store apps are just noise.
+                    continue;
+                }
+
                 if (e.EventClass == EventClassType.Process)
                 {
                     ProcessEvent = true;
