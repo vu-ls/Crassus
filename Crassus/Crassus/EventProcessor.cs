@@ -956,7 +956,8 @@ namespace Crassus.Crassus
                     break;
                 }
 
-                if (e.Process.ProcessName == "" || e.Path == "")
+                // Check if ProcessName or Path is empty
+                if (string.IsNullOrEmpty(e.Process.ProcessName) || string.IsNullOrEmpty(e.Path))
                 {
                     continue;
                 }
@@ -1018,8 +1019,7 @@ namespace Crassus.Crassus
                         // We've already got Load_image and Process_Create events. We don't care about existing files
                         continue;
                     }
-                    else if (e.Path.ToLower().Contains("\\appdata\\local\\microsoft\\windowsapps\\") 
-                    || e.Path.ToLower().Contains("}-microsoftedge_") || e.Process.ProcessName.ToLower() == "mpwigstub.exe"
+                    else if (e.Path.ToLower().Contains("}-microsoftedge_") || e.Process.ProcessName.ToLower() == "mpwigstub.exe"
                     || e.Path.ToLower().EndsWith("\\msteamsupdate.exe") || e.Path.ToLower().EndsWith("\\msteams.exe"))
                     {
                         // More noise, apparently.
