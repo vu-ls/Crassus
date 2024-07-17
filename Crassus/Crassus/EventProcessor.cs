@@ -840,7 +840,7 @@ namespace Crassus.Crassus
             }
 
             UInt32 counter = 0;
-            UInt32 steps = PMLog.TotalEvents() / 10;
+            long steps = PMLog.TotalEvents() / 10;
             if (steps == 0)
             {
                 steps = 1;
@@ -923,7 +923,7 @@ namespace Crassus.Crassus
         private void FindEvents()
         {
             UInt32 counter = 0;
-            UInt32 steps = PMLog.TotalEvents() / 10;
+            long steps = PMLog.TotalEvents() / 10;
             if (steps == 0)
             {
                 steps = 1;

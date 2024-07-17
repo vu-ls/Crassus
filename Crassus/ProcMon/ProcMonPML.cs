@@ -24,9 +24,9 @@ namespace Crassus.ProcMon
 
         Dictionary<int, PMLProcessStruct> LogProcesses = new Dictionary<int, PMLProcessStruct>();
 
-        private UInt32[] LogEventOffsets = new UInt32[0];
+        private long[] LogEventOffsets = new long[0];
 
-        private UInt32 currentEventIndex = 0;
+        private long currentEventIndex = 0;
 
         public ProcMonPML(string pMLFile)
         {
@@ -57,7 +57,7 @@ namespace Crassus.ProcMon
             return GetEvent(currentEventIndex++);
         }
 
-        public PMLEvent? GetEvent(UInt32 eventIndex)
+        public PMLEvent? GetEvent(long eventIndex)
         {
             if (eventIndex >= TotalEvents())
             {
@@ -73,6 +73,7 @@ namespace Crassus.ProcMon
             {
                 pVoidSize = 4;
             }
+
             stream.Seek(LogEventOffsets[eventIndex], SeekOrigin.Begin);
 
             PMLEventStruct logEvent = new PMLEventStruct();
@@ -170,7 +171,7 @@ namespace Crassus.ProcMon
 
         }
 
-        public UInt32 TotalEvents()
+        public long TotalEvents()
         {
             return LogHeader.TotalEventCount;
         }
@@ -330,8 +331,16 @@ namespace Crassus.ProcMon
             Array.Resize(ref LogEventOffsets, (int)LogHeader.TotalEventCount);
             for (int i = 0; i < LogEventOffsets.Length; i++)
             {
-                LogEventOffsets[i] = reader.ReadUInt32();
-                reader.ReadByte();      // Unknown.
+                uint lowerPart = reader.ReadUInt32();
+                byte upperPart = reader.ReadByte();  // Read the additional byte
+                if (upperPart == 1)
+                {
+                    LogEventOffsets[i] = lowerPart + ((long)upperPart << 32);  // Calculate the 64-bit offset
+                }
+                else
+                {
+                    LogEventOffsets[i] = lowerPart;
+                }
             }
         }
     }
