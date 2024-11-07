@@ -156,7 +156,7 @@ extern "C" {
       {
       case DLL_PROCESS_ATTACH:
           Payload();
-          break;
+          return TRUE;
       case DLL_THREAD_ATTACH:
           break;
       case DLL_THREAD_DETACH:
