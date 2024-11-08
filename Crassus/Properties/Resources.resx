@@ -146,6 +146,9 @@ extern "C" {
       // Run your payload here.
       STARTUPINFO si;
       PROCESS_INFORMATION pi;
+      ZeroMemory(&amp;si, sizeof(si));
+      si.cb = sizeof(si);
+      ZeroMemory(&amp;pi, sizeof(pi));
 
       CreateProcess(NULL, "calc.exe", NULL, NULL, FALSE, NULL, NULL, NULL, &amp;si, &amp;pi);
   }
