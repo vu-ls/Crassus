@@ -195,7 +195,7 @@ extern "C" {
   </data>
   <data name="build.sh" xml:space="preserve">
     <value>ls *.cpp | xargs grep -l //BUILD_AS_32 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "i686-w64-mingw32-g++ {}.o {}.def -shared -o {}.dll || i686-w64-mingw32-g++ {}.o -shared -o {}.dll"
-ls *.cpp | xargs grep -l //BUILD_AS_64 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "x86_64-w64-mingw32-g++ {}.o {}.def -shared -o {}.dll || x86_64-w64-mingw32-g++ i686-w64-mingw32-g++ {}.o -shared -o {}.dll"
+ls *.cpp | xargs grep -l //BUILD_AS_64 | sed 's/.cpp//' | xargs -n1 -I{} bash -c "x86_64-w64-mingw32-g++ {}.o {}.def -shared -o {}.dll || x86_64-w64-mingw32-g++ {}.o -shared -o {}.dll"
 
 </value>
   </data>
