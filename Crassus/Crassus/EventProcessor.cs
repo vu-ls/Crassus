@@ -985,7 +985,7 @@ namespace Crassus.Crassus
                     if (e.Operation == EventFileSystemOperation.Process_Create)
                     {
                         // 1) Privileged Create Process on a file that is itself or in a directory that is mutable by a non-privileged user
-                        if (e.Path.ToLower().EndsWith("\\microsoftedgeupdate.exe"))
+                        if (e.Path.ToLower().EndsWith("\\microsoftedgeupdate.exe") || e.Path.ToLower().Contains("microsoftedgeupdatesetup"))
                         {
                             // This seems to just be noise
                             continue;
