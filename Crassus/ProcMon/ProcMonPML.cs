@@ -333,15 +333,9 @@ namespace Crassus.ProcMon
             {
                 uint lowerPart = reader.ReadUInt32();
                 byte upperPart = reader.ReadByte();  // Read the additional byte
-                if (upperPart == 1)
-                {
-                    LogEventOffsets[i] = lowerPart + ((long)upperPart << 32);  // Calculate the 64-bit offset
-                }
-                else
-                {
-                    LogEventOffsets[i] = lowerPart;
-                }
+                LogEventOffsets[i] = (long)lowerPart + ((long)upperPart << 32);
             }
         }
     }
 }
+
