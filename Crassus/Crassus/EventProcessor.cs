@@ -158,18 +158,22 @@ namespace Crassus.Crassus
 
                     // This is a library or EXE that was actually loaded.
                     // Let's check the privileges of the file and directory to make sure that they're sane.
-                    bool Writable = TestIfWritable(PathName);
-                    if (Writable && !WritablePaths.Contains(PathName))
+                    (bool Writable, bool Renamable) = TestIfWritable(PathName);
+                    if ((Writable || Renamable) && !WritablePaths.Contains(PathName))
                     {
                         WritablePaths.Add(PathName);
-                        Logger.Success("We can write to: " + PathName + LoadedInfo);
+
+                        string capability = Writable && Renamable ? "write to and rename" :
+                                            Writable ? "write to" : "rename";
+
+                        Logger.Success("We can " + capability + ": " + PathName + LoadedInfo);
                         isBadItem = true;
                     }
                     else
                     {
                         if (HasWritePermissionOnPath(PathName))
                         {
-                            Logger.Warning("ACLs should allow writing to " + PathName + ", but we cannot. In use maybe?");
+                            Logger.Warning("ACLs should allow writing to or renaming" + PathName + ", but we cannot. In use maybe?");
                             isBadItem = true;
                             fileLocked = true;
                         }
@@ -481,13 +485,14 @@ namespace Crassus.Crassus
         }
 
 
-        private bool TestIfWritable(string pathname)
+        private (bool Writable, bool Renamable) TestIfWritable(string pathname)
         // Try to see if a file path is writable by first simply attempting to open it with write permissions
         // This generally works, except Acronis anti-ransomware software will show that some files are writable
         // by the current user, when they're actually not.  So we fall back to actually writing metadata to a file
         {
             Logger.Debug("Checking to see if " + pathname + " is writable by the current user");
             bool Writable = false;
+            bool Renamable = false;
             try
             {
                 // Check if a path is a directory, by checking its attributes
@@ -521,9 +526,29 @@ namespace Crassus.Crassus
                 {
                     // Attempting to open a file with write permissions will throw an error if you won't be able to write to it.
                 }
+                string tempFile = pathname + "." + Guid.NewGuid().ToString("N");
+
+                try
+                {
+                    // Rename file to a unique temporary name
+                    File.Move(pathname, tempFile);
+
+                    // Rename it back to the original name
+                    File.Move(tempFile, pathname);
+
+                    Renamable = true;
+                }
+                catch (IOException)
+                {
+                    Writable = false;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    Writable = false;
+                }
             }
 
-            return Writable;
+            return (Writable, Renamable);
         }
 
         private string FindMutableDirPart(string filePath)
