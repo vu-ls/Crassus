@@ -297,6 +297,14 @@ Crassus will look for privileged file operations to discover paths of interest. 
 
 Especially when installing software for the first time, or when installing updates, Process Monitor may log a file operation that looks to be exploitable but does not occur every time that the system boots. Exploiting these operations may be possible on the first reboot after such an event happens. To avoid such edge cases, confirm that subsequent boot logs contain the same reported file operations on subsequent reboots.
 
+## `openssl.cnf` file loaded, but no subsequent DLL loads
+
+Crassus findings where an `openssl.cnf` file is attempted to be loaded usually pretty reliably indicates a case where an arbitrary DLL can be loaded, using OpenSSL's Dynamic Shared Object (DSO) capabilities. However, there are situations where the relevant code may not expose DSO loading capability. These include, but are not limited to:
+- The `no-dso` option is specified at build time.
+- The `CONF_MFLAGS_NO_DSO` option is set, which prevents configuration modules from being dynamically loaded.
+
+As such, you might encounter situations where a user-plantable `openssl.cnf` file is parsed, but cannot be leveraged to load arbitrary DLLs via OpenSSL DSO capabilities.
+
 
 # Contributions
 Whether it's a typo, a bug, or a new feature, Crassus is very open to contributions as long as we agree on the following:
